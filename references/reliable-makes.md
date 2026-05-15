@@ -165,6 +165,6 @@ Acura RDX.
    are the trade-off.
 4. If Risky: tell the user this model has known issues. Name the specific
    issue. Recommend looking at Tier 1 alternatives at the same price.
-5. Tier 3 absent from this list: look it up. If it is a European luxury car,
-   a domestic compact, or a non-Toyota/Honda/Mazda hybrid, default to
-   skeptical.
+5. If a model is absent from this list entirely: look it up. If it is a
+   European luxury car, a domestic compact, or a non-Toyota/Honda/Mazda
+   hybrid, default to skeptical.

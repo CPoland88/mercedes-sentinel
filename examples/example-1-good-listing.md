@@ -51,7 +51,7 @@ VERDICT: TIER 1
 Year/Make/Model/Trim: 2010 Honda Accord EX-L 4-cyl (verify trim from
   interior photos: leather + heated seats + sunroof checks out)
 Ask: $5,800 / Estimated fair private-party: $5,500 to $6,800
-Engine: K24A8 2.4L I4, timing CHAIN, no scheduled belt service
+Engine: Honda K24-series 2.4L I4, timing CHAIN, no scheduled belt service
 Known issues for this gen: 2008 to 2012 K24 has an oil-burn TSB
   pattern; ask seller about oil consumption between changes
 Seller signal: GREEN. Established account, 1 active vehicle, real

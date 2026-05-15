@@ -54,6 +54,11 @@ next to the seller's name).
   NOT ACCEPT TRADES!! PRICE IS FIRM!!"). Counterintuitively, this is a
   strong green flag. Curbstoners try to sound welcoming and professional.
   Real private sellers are annoyed by tire-kickers.
+  **Tiebreaker:** salty tone is a green flag ONLY when the rest of the
+  listing has specific dated maintenance, honest cosmetic disclosure, or
+  a personal narrative. Salty tone combined with marketing-copy bullet
+  points is performance, not signal. In that case it's a yellow or red
+  flag depending on other signals.
 - Detailed enthusiast description with personal context ("I bought this
   for school in 2020, upgrading to something bigger"). Specific dates and
   personal narrative are hard to fake.
@@ -90,7 +95,7 @@ Click into the seller's profile from the listing. Look at:
 
 See `scam-patterns.md` for the full list. The curbstoner-specific ones:
 
-- "Title in hand" (real owners say "clean title" or just nothing)
+- "Title in hand" (curbstoner verbal tic; see title-status section below)
 - "Runs and drives great" (filler phrase, signals nothing about the car
   and is a curbstoner verbal tic)
 - "Selling for a friend" (escape hatch for not knowing service history)

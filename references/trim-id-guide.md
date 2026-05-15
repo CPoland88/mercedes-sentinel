@@ -8,10 +8,10 @@ Always verify trim before committing to a valuation.
 ## What's in the Carfax
 
 The Carfax decodes the VIN to a base trim string, but on most US-market
-cars the VIN does NOT encode the full trim level (the 4th digit varies by
-manufacturer, and many manufacturers do not encode options or trim suffix
-in the VIN). The Carfax often shows just "Honda Accord 4DR Sedan" or
-"Toyota Camry SE Sedan," and the trim suffix may be missing or wrong.
+cars the VIN does NOT encode the full trim level. VIN positions 4
+through 8 vary by manufacturer; many do not encode trim suffix at all.
+The Carfax often shows just "Honda Accord 4DR Sedan" or "Toyota Camry
+SE Sedan," and the trim suffix may be missing or wrong.
 
 Honda, Toyota, Mazda, and Subaru: VIN encodes base model + body style but
 usually not trim suffix.
