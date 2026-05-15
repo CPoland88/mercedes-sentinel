@@ -122,7 +122,9 @@ known-good year can be fine. But default posture is skeptical.
   user is wrenching)
 - Mini Cooper (timing chain tensioner; expensive)
 - Fiat 500
-- Saturn / Pontiac (parts availability and dealer support gone)
+- Saturn / Pontiac (parts availability and dealer support gone). Pontiac
+  Vibe is the exception: it is a rebadged Toyota Matrix on Toyota's parts
+  catalog and lives in Tier 1.
 - Smart Car
 
 **Specific year/model traps**

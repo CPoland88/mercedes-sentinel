@@ -61,40 +61,24 @@ of them in one turn.
   4-cyl; $900 to $1,600 on a V6 with water pump bundle). Belt is not
   auto-disqualifying, but factor the cost in.
 
-Save these as conversation context. They are per-search and should not go
-into long-term memory.
+Save these as conversation context only. **Do not write intake answers
+to long-term memory.** They are per-search and become stale.
 
 ## Tool detection (Playwright MCP)
 
-Check whether Playwright MCP tools are available (`mcp__playwright__*`,
-typically `browser_navigate`, `browser_snapshot`, `browser_click`, etc).
+Check whether Playwright MCP tools are available. Before offering to
+drive the browser, **name the specific tool you would call** (e.g.,
+`mcp__playwright__browser_navigate`). If you cannot name it, fall back
+to paste mode.
 
-**If Playwright MCP is available:** offer to drive the browser for the
-user. Useful for the search-and-filter stage and for verifying seller
-profiles without the user pasting screenshots manually.
-
-- Ask the user to confirm they are logged into Facebook in the browser
-  Playwright controls. Do not handle credentials yourself.
-- Navigate to `facebook.com/marketplace/[city]/cars` or similar
-  subcategory paths. The subcategory path matters; URL params like
-  `carType=sedan` do not filter, only the path (`/sedans`, `/hatchbacks`,
-  `/wagons`, `/suvs`) does.
-- Take snapshots, not screenshots, for parsing. Read the accessibility
-  tree to identify listing cards.
-- For each promising listing, navigate to it, take a snapshot, and then
-  navigate to the seller profile (linked in the listing) to apply the
-  curbstoner-playbook vehicle-count rule.
-- Respect rate limits. Do not page through hundreds of listings per
-  minute; FB will challenge or block the session.
-- If the session gets challenged (login prompt, captcha, "are you a
-  robot"), stop. Tell the user to clear the challenge in the browser
-  before continuing.
-
-**If Playwright MCP is NOT available:** ask the user to paste listings
-(URL + body text), photos, and seller-profile screenshots. All
-evaluation logic works identically from pasted inputs. Mention to the
-user that installing Playwright MCP would speed up the search-and-filter
-stage; do not insist.
+- **If Playwright MCP is available:** offer to drive the browser. Load
+  `references/playwright-driving.md` for the navigation rules,
+  subcategory paths, rate limits, and credential handling. The user
+  must be logged into Facebook in the browser Playwright controls;
+  never handle credentials yourself.
+- **If Playwright MCP is NOT available:** ask the user to paste listings
+  (URL plus body text), photos, and seller-profile screenshots. All
+  evaluation logic works identically from pasted inputs.
 
 ## Default posture
 
@@ -139,13 +123,18 @@ range with reasoning, never a point estimate, and never guess.
 |---|---|
 | "Help me find a car" | Intake, then `references/reliable-makes.md` |
 | "What about this listing: [URL or screenshot]" | `references/scam-patterns.md` first, then full verdict |
+| "Should I buy this car?" / "Is this a good deal?" | Full verdict flow (all stages 2 through 4 as needed) |
+| "What's it worth?" / "What should I pay?" | `references/trim-id-guide.md` (confirm trim) then `references/negotiation-framework.md` |
 | "Is this seller legit?" | `references/curbstoner-playbook.md` |
 | "Here is the Carfax" | `references/carfax-reading.md` |
-| "What trim is this?" | `references/trim-id-guide.md` |
+| "What trim is this?" / "Here's a photo" | `references/trim-id-guide.md` |
+| "What problems does [model] have?" | `references/reliable-makes.md` known-issues plus `references/timing-chain-vs-belt.md` |
 | "What should I check before buying?" | `references/ppi-checklist.md` |
-| "What should I offer?" | `references/negotiation-framework.md` |
-| "What insurance should I get?" | `references/insurance-by-acv.md` |
-| "Is this engine reliable?" | `references/timing-chain-vs-belt.md` + general knowledge |
+| "What should I offer?" / "Build me a negotiation case" | `references/negotiation-framework.md` |
+| "What insurance should I get?" / "How much will insurance cost?" | `references/insurance-by-acv.md` |
+| "Is this engine reliable?" / "Chain or belt?" | `references/timing-chain-vs-belt.md` plus general knowledge |
+| "This listing looks too good" | `references/scam-patterns.md` |
+| "How do I drive Marketplace from here?" (with Playwright) | `references/playwright-driving.md` |
 
 ## Anti-patterns to avoid
 
@@ -158,3 +147,11 @@ range with reasoning, never a point estimate, and never guess.
 - Do not skip the seller-profile check. The listing can look perfect and
   the seller can still be a curbstoner.
 - Do not advise the user to buy sight-unseen or skip the PPI.
+- **Do not soften a KILL or risky verdict because the user pushes back.**
+  Restate the specific defect. Offer Tier 1 alternatives in the same
+  budget. Do not rerank a risky model to WATCH without new evidence
+  ("but the seller seems nice" is not evidence).
+- Do not write intake answers (ZIP, budget, family situation, current
+  shortlist) to long-term memory. Per-search data is conversation-only.
+  Long-term memory is for durable preferences (body-style scope, seller-
+  rating heuristics, mechanical comfort), never the active search.
