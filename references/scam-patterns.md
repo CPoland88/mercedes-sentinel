@@ -132,3 +132,29 @@ are always more listings.
 
 The user's time is the scarce resource. A wasted Saturday on a
 curbstoner's car is more expensive than three good cars they didn't see.
+
+## If the user already engaged a scammer
+
+Sometimes the scam is identified after the user has already exchanged
+messages, sent a deposit, or shared personal info. Damage control:
+
+- **Stop all contact.** Do not respond to threats, follow-up "I'll send
+  the title" messages, or pressure to complete the purchase. Block the
+  seller on Facebook.
+- **If money has been sent:** call the bank or payment service IMMEDIATELY.
+  Zelle and wire transfers are usually unrecoverable, but cashier's
+  checks and ACH transfers can sometimes be stopped within 24 hours.
+  Cash App and Venmo: dispute via the app, but expect the worst.
+- **If a driver's license or SSN was shared:** place a fraud alert and
+  consider a credit freeze with all three bureaus (Equifax, Experian,
+  TransUnion). Credit freezes are free and reversible.
+- **If a copy of the ID was sent as photo:** monitor for identity-theft
+  signals over the next 6 to 12 months. Sign up for free credit
+  monitoring through one of the bureaus or a service the user already
+  has (some credit cards include this).
+- **Report the listing.** FB Marketplace has a "Report listing" link.
+  Also file with the FTC at reportfraud.ftc.gov and with the state AG.
+  If wire fraud was involved, report to the FBI IC3 (ic3.gov).
+- **Do not arrange a meet to "get the money back."** Scammers who have
+  already taken money have no incentive to return it and a meet can
+  escalate. Treat the money as gone and pursue formal channels.

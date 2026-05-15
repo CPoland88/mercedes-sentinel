@@ -151,6 +151,13 @@ Rental reimbursement:          skip (or $30/day max if no second car)
 Roadside:                      skip (use AAA / credit card)
 ```
 
+**Single-car carve-out for dropping collision:** the "drop collision
+under $5K ACV" rule assumes you can absorb the loss without major
+hardship. If this is your only car and replacing it within a week is
+not financially or logistically feasible, keep collision even at lower
+ACVs (and set the deductible to $1,000 to hold the premium down). The
+math changes when "total loss" means "cannot get to work tomorrow."
+
 Expected annual premium: $700 to $1,200 depending on driving record,
 location, and age. Compared to the typical "full coverage" pitch at
 $1,500 to $2,500, this saves $500 to $1,300 per year.

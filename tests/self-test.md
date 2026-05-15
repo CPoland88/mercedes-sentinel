@@ -71,7 +71,7 @@ change, new brakes all around!! Cold AC!! Power everything works!!
 Must see in person!! Serious buyers only!! Cash deal only!! Title in
 hand ready to transfer!!
 
-Seller: Carlos Mendez. Joined FB 5 months ago. 22 Marketplace ratings
+Seller: Brandon Walsh. Joined FB 5 months ago. 22 Marketplace ratings
 (all from vehicle sales). Active listings: this Civic, a 2014 Nissan
 Sentra, a 2011 Toyota Corolla, a set of 16" rims, a Honda K24 starter
 motor. Recently sold: 2009 Mazda3, 2012 Hyundai Elantra, 2008 Honda
@@ -104,7 +104,7 @@ move it quickly. I can arrange shipping through a service that will
 hold payment in escrow and let you inspect for 5 days. Contact me at
 [gmail address] for photos and to discuss.
 
-Seller: Patricia Lee. Joined FB 2 weeks ago. 0 ratings. One listing
+Seller: Karen Mitchell. Joined FB 2 weeks ago. 0 ratings. One listing
 (this 4Runner). No timeline. Stock-image profile photo.
 ===
 ```

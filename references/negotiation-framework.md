@@ -177,3 +177,26 @@ When the seller accepts:
 If anything at meet-up is different from what was agreed (different
 title status, different mileage, undisclosed damage), the offer is
 withdrawn. Walk.
+
+## Cash-handoff safety
+
+Private-party transactions in the $3K to $15K band involve carrying
+real cash through public spaces. A few rules cut the risk to nearly
+zero:
+
+- **Meet at the seller's bank during business hours.** Many banks will
+  notarize the bill of sale and verify a cashier's check on the spot.
+  Most sellers agree because it protects them too.
+- **Daylight only.** Never finalize a cash deal after dark or at a
+  residence you don't know.
+- **Bring a second person.** A friend or family member, not for
+  negotiation but as a witness and a deterrent. Two-on-one beats
+  one-on-one in any scenario.
+- **Tell someone the meet details.** Where, when, with whom, and the
+  listing URL. Share your phone location for the duration.
+- **Cashier's check beats cash above $5K.** Both parties go inside the
+  seller's branch, the bank verifies the check, the seller deposits it
+  while you watch. No cash crosses a parking lot.
+- **Never meet at the seller's "storage location" or a remote address.**
+  A real seller can drive the car to a bank. Insistence on a fixed
+  meet location is a red flag.

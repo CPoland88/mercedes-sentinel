@@ -148,8 +148,10 @@ If any answer feels rehearsed, evasive, or contradicts the listing, walk.
 
 Before paying, look at the odometer and the Carfax. Curbstoners sometimes
 roll back mileage. If the odometer reads lower than the last service
-record on the Carfax, the car has been clocked. This is fraud. Walk and
-report.
+record on the Carfax, the car has been clocked. This is fraud. Do NOT
+confront the seller at the meet; rollback is a crime and the seller
+knows it. Tell them the car isn't a fit, leave, then report to the
+state AG and the NHTSA odometer fraud line.
 
 ## State-specific resources
 

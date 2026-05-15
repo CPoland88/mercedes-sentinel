@@ -148,8 +148,11 @@ at a roughly consistent rate.
 - **Rate of accumulation**: average annual miles. 7K to 15K is normal.
   Under 5K is a grandpa car (good). Over 20K is a road-warrior commuter
   car (more wear).
-- **Mileage that goes backwards**: odometer rollback. Walk and report
-  to the state AG.
+- **Mileage that goes backwards**: odometer rollback. Walk first, then
+  report. Do NOT confront the seller in person; rollback is fraud, the
+  seller knows it, and confrontations at a meet can escalate. Tell the
+  seller the car isn't a fit, leave, then report to the state AG and
+  the NHTSA odometer fraud line.
 - **Long flat periods**: car was parked. Could be normal (snowbird
   storage); could be theft / impound / collision.
 
