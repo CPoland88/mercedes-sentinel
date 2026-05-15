@@ -55,8 +55,9 @@ of them in one turn.
   body-style and 4-door-required decisions.
 - **Mechanical comfort.** Will the user DIY brakes? Hybrid battery? Or is
   every repair shop labor? Drives total cost of ownership math.
-- **Belt tolerance.** Timing-chain motors are lower-maintenance. Timing-belt
-  motors need a $500 to $1,200 service every 90K to 100K miles. Belt is not
+- **Belt tolerance.** Timing-chain motors are lower-maintenance. Timing-
+  belt motors need a service every 90K to 100K miles ($500 to $900 on a
+  4-cyl; $900 to $1,600 on a V6 with water pump bundle). Belt is not
   auto-disqualifying, but factor the cost in.
 
 Save these as conversation context. They are per-search and should not go

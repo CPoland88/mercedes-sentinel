@@ -8,16 +8,18 @@ pistons hit the valves and the engine is destroyed.
   generally lasts the life of the engine if oil is changed regularly.
   No scheduled replacement.
 - **Timing belt**: rubber, runs outside the engine block (under a cover),
-  has a scheduled replacement interval of 60K to 105K miles. Costs $500
-  to $1,200 to replace (typically with water pump, tensioner, idler).
+  has a scheduled replacement interval of 60K to 105K miles. Cost to
+  replace varies by engine: $500 to $900 for a 4-cyl belt-only job;
+  $900 to $1,600 for a V6 "do-it-all" service (belt + water pump +
+  tensioner + idler + seals), which is the typical bundle.
 
 For a used-car buyer, the math is:
 
 - Chain engine: zero scheduled timing service. Cost-of-ownership win.
 - Belt engine: factor the next belt service into the purchase price.
-  If the belt is overdue, that's a $700+ negotiation lever (and a
-  walk if the seller refuses to discount and you find any belt-failure
-  damage on the PPI).
+  If the belt is overdue on a V6, that's a $900+ negotiation lever
+  (and a walk if the seller refuses to discount and you find any
+  belt-failure damage on the PPI).
 
 **Belt is not auto-disqualifying.** It is a known cost. Price it in.
 
@@ -51,13 +53,13 @@ These are the boring, durable engines you want:
 | Toyota 1GR-FE 4.0L V6 | 4Runner V6, FJ Cruiser, Tacoma V6, Tundra V6 |
 | Honda K20 / K24 I4 | Civic Si, Accord 4-cyl 2003+, CR-V 2002+, Element, TSX, ILX |
 | Honda R18 / R20 I4 | Civic 2006 to 2015, CR-V 2007 to 2014 |
-| Honda LDA 1.3L I4 (hybrid) | Insight 2nd gen, Civic Hybrid, Fit Hybrid |
+| Honda LDA 1.3L I4 (hybrid) | Insight 2nd gen (2010 to 2014), Civic Hybrid (2006 to 2011) |
 | Honda L15 1.5L turbo | Civic 2016+, CR-V 2017+ (chain, but has oil-dilution issue) |
 | Mazda MZR 2.0L / 2.3L I4 | Mazda3 pre-2014, Mazda6 4-cyl pre-2014, CX-7 base |
 | Mazda SkyActiv-G 2.0L / 2.5L | Mazda3 2014+, Mazda6 2014+, CX-5, CX-9 2016+ |
 | Subaru FB20 / FB25 | Impreza 2012+, Forester 2011+, Outback 2.5i 2013+, Legacy 2.5i 2010+ |
 | Lexus 2GR-FE V6 | ES 350, IS 350, GS 350, RX 350 |
-| Lexus 4GR-FE / 4GR / 2GR I4-V6 | IS 250 |
+| Lexus 4GR-FSE 2.5L V6 | IS 250 (chain; intake-valve carbon buildup from direct injection is the known issue) |
 
 ## Special cases
 

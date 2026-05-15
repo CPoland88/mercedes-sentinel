@@ -87,6 +87,13 @@ in less than 1 hour, find another shop.
 - Engine OBD-II scan for stored AND pending codes (pending codes catch
   defects the seller cleared before the sale)
 - Compression test if engine is high-mileage or runs roughly
+  (industry threshold: 15% variance between cylinders, or any cylinder
+  below 75% of spec)
+- Camshaft and crankshaft seal inspection for leaks (Honda J-series
+  and Toyota 2AZ are known leakers)
+- Steering rack play check; ball joints, tie rods, control arm bushings
+- AC system static pressure check (not just "blows cold"; pressures
+  predict compressor failure)
 - Test all electronics
 - Road test under load (highway + back-roads)
 - Verify VIN on engine block matches title (catches stolen-engine swaps)
@@ -97,6 +104,9 @@ in less than 1 hour, find another shop.
 - Vacuum leak check
 - EVAP system check
 - Check engine mounts and transmission mounts
+- VVT actuator rattle on cold start (common Honda K-series tell)
+- On direct-injection turbo engines: cam-to-crank correlation codes
+  (P0008, P0016, P0017 etc.) which predict timing chain stretch
 
 ### Turbocharged
 
@@ -106,24 +116,30 @@ in less than 1 hour, find another shop.
 - Carbon buildup on intake valves (problem for direct-injection engines
   like Audi 2.0T, Mazda SkyActiv, GM Ecotec)
 
-### CVT-equipped (Nissan, Subaru, some Honda)
+### CVT-equipped (Nissan, Subaru, Honda Civic 2014+, Accord 2013+ 4-cyl, HR-V, Fit 2015+)
 
 - CVT fluid color and smell (burned = walk)
 - Test drive at multiple speeds; CVT should be smooth, no whining or
   shuddering
 - Scan for CVT-specific codes
 - If the car is Nissan with 80K+ miles and original CVT: factor in CVT
-  replacement risk
+  replacement risk. Honda CVTs (Civic, Accord 4-cyl, HR-V) are
+  meaningfully more reliable than Nissan Jatco units; still worth a
+  fluid check but less catastrophic-failure-prone.
 
 ### Hybrid
 
 - High-voltage battery state-of-health test via OBD-II (Foxwell NT510,
   Techstream for Toyota, HDS for Honda)
-- Inverter coolant level and condition
+- Inverter coolant level, condition, and replacement history (Toyota
+  spec is ~100K but real-world cars often have original at 150K+)
+- HV transaxle fluid on Toyota hybrids (Prius, Camry Hybrid, Highlander
+  Hybrid have their own gearbox fluid that is routinely ignored)
 - 12V battery test (hybrids are sensitive; weak 12V causes phantom IMA
-  faults)
-- Verify hybrid-specific recalls completed (Prius Gen 2 brake actuator,
-  Insight IMA software)
+  faults). Prius 12V is an AGM in the cargo area, $250 to $350 OEM,
+  not the standard $180 to $220 flooded.
+- Verify hybrid-specific recalls completed (Prius Gen 3 brake actuator
+  recall 16V-053, Insight IMA software)
 - Listen for high-voltage cooling fan operation
 
 ### Diesel
@@ -154,7 +170,8 @@ cost estimate from the same shop. Knock the cost off the asking price.
   item
 - Cracked exhaust manifold or muffler: $300 to $900
 - Battery near end of life: $180 to $250
-- Upcoming timing belt (within 10K miles): $700 to $1,200
+- Upcoming timing belt (within 10K miles): $500 to $900 on a 4-cyl;
+  $900 to $1,600 on a V6 with water pump bundle
 
 ## Walk-away findings (don't negotiate, just leave)
 

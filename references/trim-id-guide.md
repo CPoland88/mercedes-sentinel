@@ -48,8 +48,8 @@ The fastest tells, in order of usefulness:
 
 ### Honda
 
-- **Civic**: DX (no AC pre-2007) -> LX -> EX -> EX-L -> Si (manual,
-  sport) -> Touring (post-2015)
+- **Civic**: DX (AC was optional, not standard, on the DX pre-2006)
+  -> LX -> EX -> EX-L -> Si (manual, sport) -> Touring (post-2015)
 - **Accord**: LX -> Sport -> EX -> EX-L -> Touring
 - **CR-V**: LX -> EX -> EX-L -> Touring
 - **Fit**: Base -> Sport -> EX -> EX-L
@@ -67,7 +67,9 @@ EX-L tells: leather seats, heated seats, possibly nav, alloy wheels.
 - **Corolla**: L -> LE -> S -> XLE -> XSE (modern); CE -> S -> LE -> XRS
   (2003 to 2008)
 - **Camry**: L -> LE -> SE -> XLE -> XSE; CE / Standard for older
-- **Avalon**: Touring -> XLE -> XLS -> Limited
+- **Avalon (3rd gen, 2005 to 2012)**: XL -> Touring -> XLS -> Limited
+- **Avalon (4th gen, 2013 to 2018)**: XLE -> XLE Premium -> Touring ->
+  Limited
 - **RAV4**: LE -> XLE -> SE -> Limited -> Platinum
 
 LE tells: steel wheels or basic alloys, cloth, single-DIN radio.

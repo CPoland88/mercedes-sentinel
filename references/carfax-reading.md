@@ -113,7 +113,7 @@ time-of-service, not the date.
 | Transmission fluid (CVT) | 30K | CVT failure if neglected |
 | Coolant flush | 60K to 100K | Overdue = head gasket risk |
 | Spark plugs | 30K (copper) / 100K (iridium) | Iridium usually overdue |
-| Timing belt + water pump | 90K to 105K | If due, $700 to $1,200 service |
+| Timing belt + water pump | 90K to 105K | See `timing-chain-vs-belt.md` for cost by engine |
 | Brake fluid flush | 30K | Often skipped, low priority |
 | Brake pads (front) | 30K to 50K | Note last replacement and current |
 | Brake pads (rear) | 60K to 100K | Often original on 100K cars |
@@ -133,9 +133,9 @@ that service in the negotiation case.
   with a 2-year-old battery is much safer than a 6-year-old Prius with
   the original.
 - **High-voltage battery NOT replaced on a 10+ year hybrid**: original
-  battery, in or near its failure window. Budget for replacement (Prius
-  Gen 2/3: $1,400 to $2,500; Insight 2nd gen: $1,200 to $1,800; Civic
-  Hybrid: similar; Ford/Mercury hybrid: more expensive).
+  battery, in or near its failure window. Budget for replacement. See
+  `negotiation-framework.md` defect-cost table for current refurb and
+  lithium-conversion ranges by model.
 - **IMA / hybrid system fault codes** logged in service history: ask
   what was done. Sometimes the battery was reconditioned, sometimes
   ignored.

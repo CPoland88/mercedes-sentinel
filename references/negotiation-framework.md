@@ -47,7 +47,7 @@ Use these only as a backup if the PPI shop doesn't quote each item.
 
 | Defect | Cost to fix at indie shop |
 |---|---|
-| Timing belt + water pump (V6) | $700 to $1,200 |
+| Timing belt + water pump (V6) | $900 to $1,600 |
 | Transmission fluid drain-and-fill | $80 to $200 |
 | Transmission fluid full flush | $200 to $400 |
 | Coolant flush | $120 to $200 |
@@ -62,8 +62,9 @@ Use these only as a backup if the PPI shop doesn't quote each item.
 | Struts/shocks (set of 4) | $600 to $1,200 |
 | Control arms / bushings | $300 to $800 |
 | CV axle (one side) | $200 to $400 |
-| AC compressor + recharge | $700 to $1,400 |
-| Catalytic converter | $400 to $1,500 |
+| AC compressor + recharge | $900 to $1,800 (higher on R-1234yf vehicles) |
+| Catalytic converter (aftermarket federal) | $400 to $1,500 |
+| Catalytic converter (CARB or OEM Honda/Toyota) | $1,200 to $2,500 |
 | Wheel bearings (per side) | $250 to $500 |
 | Power steering pump | $300 to $700 |
 | Alternator | $300 to $600 |
@@ -76,7 +77,7 @@ For hybrid-specific:
 |---|---|
 | Prius Gen 2 hybrid battery (refurb) | $1,400 to $2,000 |
 | Prius Gen 3 hybrid battery (refurb) | $1,600 to $2,500 |
-| Honda Insight 2nd gen IMA battery (refurb) | $1,200 to $1,800 |
+| Honda Insight 2nd gen IMA battery (refurb) | $1,500 to $2,200 |
 | Honda Civic Hybrid IMA battery (refurb) | $1,400 to $2,000 |
 | Lithium conversion (any of the above) | $1,800 to $2,400 |
 | Grid charger / reconditioning attempt | $300 to $500 |
