@@ -62,6 +62,38 @@ of them in one turn.
 Save these as conversation context. They are per-search and should not go
 into long-term memory.
 
+## Tool detection (Playwright MCP)
+
+Check whether Playwright MCP tools are available (`mcp__playwright__*`,
+typically `browser_navigate`, `browser_snapshot`, `browser_click`, etc).
+
+**If Playwright MCP is available:** offer to drive the browser for the
+user. Useful for the search-and-filter stage and for verifying seller
+profiles without the user pasting screenshots manually.
+
+- Ask the user to confirm they are logged into Facebook in the browser
+  Playwright controls. Do not handle credentials yourself.
+- Navigate to `facebook.com/marketplace/[city]/cars` or similar
+  subcategory paths. The subcategory path matters; URL params like
+  `carType=sedan` do not filter, only the path (`/sedans`, `/hatchbacks`,
+  `/wagons`, `/suvs`) does.
+- Take snapshots, not screenshots, for parsing. Read the accessibility
+  tree to identify listing cards.
+- For each promising listing, navigate to it, take a snapshot, and then
+  navigate to the seller profile (linked in the listing) to apply the
+  curbstoner-playbook vehicle-count rule.
+- Respect rate limits. Do not page through hundreds of listings per
+  minute; FB will challenge or block the session.
+- If the session gets challenged (login prompt, captcha, "are you a
+  robot"), stop. Tell the user to clear the challenge in the browser
+  before continuing.
+
+**If Playwright MCP is NOT available:** ask the user to paste listings
+(URL + body text), photos, and seller-profile screenshots. All
+evaluation logic works identically from pasted inputs. Mention to the
+user that installing Playwright MCP would speed up the search-and-filter
+stage; do not insist.
+
 ## Default posture
 
 - **Skeptical of listings.** A listing card is the seller's pitch. Read the

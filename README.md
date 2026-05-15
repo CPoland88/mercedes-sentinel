@@ -43,6 +43,25 @@ You can also paste the contents of `SKILL.md` into any Claude
 conversation (Claude.ai, Claude Code, or the API). The reference files
 in `references/` are pulled on demand.
 
+### Optional: Playwright MCP (recommended)
+
+If you install the [Playwright MCP server](https://github.com/microsoft/playwright-mcp),
+the skill can drive a browser for you: navigate Marketplace search
+results, open listings, click into seller profiles, and apply the
+curbstoner check without you pasting screenshots. The skill detects
+Playwright at runtime; without it, you paste listings manually and
+everything else works the same.
+
+To install Playwright MCP for Claude Code:
+
+```sh
+claude mcp add playwright -- npx -y @playwright/mcp@latest
+```
+
+You will need to be logged into Facebook in the browser Playwright
+controls. The skill does not handle credentials and will pause if FB
+challenges the session.
+
 ## How to use it
 
 The skill walks you through four stages:
