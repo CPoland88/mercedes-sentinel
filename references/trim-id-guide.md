@@ -48,64 +48,70 @@ The fastest tells, in order of usefulness:
 
 ### Honda
 
-- **Civic**: DX (AC was optional, not standard, on the DX pre-2006)
-  -> LX -> EX -> EX-L -> Si (manual, sport) -> Touring (post-2015)
-- **Accord**: LX -> Sport -> EX -> EX-L -> Touring
-- **CR-V**: LX -> EX -> EX-L -> Touring
-- **Fit**: Base -> Sport -> EX -> EX-L
+| Model | Trim ladder (low to high) |
+|---|---|
+| Civic | DX -> LX -> EX -> EX-L -> Si (sport) -> Touring (post-2015) |
+| Accord | LX -> Sport -> EX -> EX-L -> Touring |
+| CR-V | LX -> EX -> EX-L -> Touring |
+| Fit | Base -> Sport -> EX -> EX-L |
 
-LX tells: steel wheels with plastic covers, cloth seats, single-DIN
-radio, bare steering wheel (cruise buttons on column stalk pre-2013).
+Civic DX note: AC was optional, not standard, on the DX pre-2006.
 
-EX tells: alloy wheels, sunroof, cruise on steering wheel, possibly
-moonroof, premium cloth.
-
-EX-L tells: leather seats, heated seats, possibly nav, alloy wheels.
+| Trim | Visual tells |
+|---|---|
+| LX | Steel wheels with plastic covers, cloth, single-DIN radio, bare wheel (cruise on column stalk pre-2013) |
+| EX | Alloy wheels, sunroof, cruise on steering wheel, premium cloth |
+| EX-L | Leather, heated seats, possibly nav, alloy wheels |
 
 ### Toyota
 
-- **Corolla**: L -> LE -> S -> XLE -> XSE (modern); CE -> S -> LE -> XRS
-  (2003 to 2008)
-- **Camry**: L -> LE -> SE -> XLE -> XSE; CE / Standard for older
-- **Avalon (3rd gen, 2005 to 2012)**: XL -> Touring -> XLS -> Limited
-- **Avalon (4th gen, 2013 to 2018)**: XLE -> XLE Premium -> Touring ->
-  Limited
-- **RAV4**: LE -> XLE -> SE -> Limited -> Platinum
+| Model | Trim ladder (low to high) |
+|---|---|
+| Corolla (modern) | L -> LE -> S -> XLE -> XSE |
+| Corolla (2003 to 2008) | CE -> S -> LE -> XRS |
+| Camry | L -> LE -> SE -> XLE -> XSE (CE / Standard for older) |
+| Avalon (3rd gen, 2005 to 2012) | XL -> Touring -> XLS -> Limited |
+| Avalon (4th gen, 2013 to 2018) | XLE -> XLE Premium -> Touring -> Limited |
+| RAV4 | LE -> XLE -> SE -> Limited -> Platinum |
 
-LE tells: steel wheels or basic alloys, cloth, single-DIN radio.
-SE tells: sport bumpers, leatherette, paddle shifters on automatic.
-XLE/XSE/Limited: leather, moonroof, premium audio, smart-key.
+| Trim | Visual tells |
+|---|---|
+| LE | Steel wheels or basic alloys, cloth, single-DIN radio |
+| SE | Sport bumpers, leatherette, paddle shifters on automatic |
+| XLE / XSE / Limited | Leather, moonroof, premium audio, smart-key |
 
 ### Mazda
 
-- **Mazda3**: i Sport -> i Touring -> i Grand Touring -> s Grand Touring
-  (s = larger engine pre-2014)
-- **Mazda6**: i Sport -> i Touring -> i Grand Touring -> s Grand Touring
-- **CX-5**: Sport -> Touring -> Grand Touring -> Signature
+| Model | Trim ladder (low to high) |
+|---|---|
+| Mazda3 | i Sport -> i Touring -> i Grand Touring -> s Grand Touring |
+| Mazda6 | i Sport -> i Touring -> i Grand Touring -> s Grand Touring |
+| CX-5 | Sport -> Touring -> Grand Touring -> Signature |
+
+Mazda3/6 "s" prefix = larger engine pre-2014.
 
 Grand Touring tells: leather, Bose audio, sunroof, alloy wheels with
 unique finish, color screen.
 
 ### Subaru
 
-- **Impreza / Legacy / Outback / Forester**: Base -> Premium -> Sport ->
-  Limited -> Touring (and XT for turbo on some)
+Impreza / Legacy / Outback / Forester all share the same ladder:
+Base -> Premium -> Sport -> Limited -> Touring (and XT for turbo on
+some).
 
-Limited tells: leather, heated seats, moonroof, alloys, nav.
-Premium: alloys, cloth, some power features.
-Base: steel wheels, manual everything.
+| Trim | Visual tells |
+|---|---|
+| Base | Steel wheels, manual everything |
+| Premium | Alloys, cloth, some power features |
+| Limited | Leather, heated seats, moonroof, alloys, nav |
 
 ### Lexus
 
 Lexus models (ES, IS, GS, RX) historically have only one or two
 trim levels per generation, distinguished by option packages. "350"
 vs "300h" is engine, not trim. Look for option packages on the window
-sticker or build sheet:
-
-- Premium / Luxury / Ultra Luxury packages
-- Navigation package
-- Sport package (F-Sport)
-- Cold-weather package
+sticker or build sheet: Premium / Luxury / Ultra Luxury, Navigation,
+F-Sport, Cold-weather.
 
 ### Acura
 

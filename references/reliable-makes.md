@@ -12,63 +12,52 @@ in `timing-chain-vs-belt.md` and in this file's known-issues section.
 
 **Compact / midsize sedans and hatchbacks**
 
-- Toyota Corolla (any post-2003 generation)
-- Toyota Camry (4-cyl 2AZ-FE; 2007 to 2009 has the 2AZ oil-burn TSB,
-  verify oil-consumption history. 2010+ 2AR-FE is the safer pick.
-  V6 1MZ-FE needs timing belt)
-- Toyota Avalon (any generation)
-- Toyota Matrix (2003 to 2014)
-- Toyota Prius (Gen 2 and Gen 3; hybrid battery is the only big risk)
-- Toyota Yaris / Echo
-- Honda Civic (post-1996, the 8th and 9th gen R18 motors are exceptional)
-- Honda Accord (4-cyl K24 in 7th and 8th gen is durable; some 2008 to
-  2012 K24Z have oil-consumption patterns, ask about oil use. V6 J35
-  needs belt pre-2008)
-- Honda Fit (any generation)
-- Honda Insight (2nd gen 2010 to 2014; IMA battery is the risk)
-- Mazda3 (any pre-2014 with naturally-aspirated MZR; 2014+ SkyActiv-G
-  is also good)
-- Mazda6 (pre-2014 4-cyl)
-- Mazda2
-- Mazda Protege (2.0L)
-- Subaru Impreza (post-2012 FB20 SOHC; pre-2012 EJ25 has head-gasket risk)
-- Subaru Legacy (4-cyl post-2010 FB25)
-- Subaru Outback (4-cyl post-2010 FB25)
-- Lexus ES (300/330 has 1MZ/3MZ belt; ES 350 has 2GR-FE chain)
-- Lexus IS (IS 250 has 4GR-FSE chain, known for intake-valve carbon
-  buildup from direct injection; 2001 to 2005 IS 300 is the 2JZ-GE
-  legend; 2016+ IS 300 is either turbo 2.0L 8AR-FTS or detuned 2GR-FKS
-  V6, not 2JZ)
-- Lexus GS (300/350 chain; older GS 430 chain)
-- Acura TL (3rd and 4th gen)
-- Acura TSX (any; K24 chain)
-- Acura ILX (early gen is a Civic in a suit; the 2013 to 2015 2.4L
-  manual with K24Z7 is the enthusiast pick. The 2.0L automatic is
-  slow.)
-- Scion xA / xB / xD (Toyota underneath)
-- Pontiac Vibe (literal Toyota Matrix with a Pontiac badge, including the
-  GM dealership warranty history; often cheaper than the Matrix)
+| Model | Notes |
+|---|---|
+| Toyota Corolla | Any post-2003 |
+| Toyota Camry | 4-cyl 2AZ-FE (2007 to 2009 oil-burn TSB, verify history; 2010+ 2AR-FE safer). V6 1MZ-FE needs belt. |
+| Toyota Avalon | Any generation |
+| Toyota Matrix | 2003 to 2014 |
+| Toyota Prius | Gen 2 and Gen 3; hybrid battery is the only big risk |
+| Toyota Yaris / Echo | Any |
+| Honda Civic | Post-1996; 8th and 9th gen R18 motors are exceptional |
+| Honda Accord | 4-cyl K24 in 7th and 8th gen durable; some 2008 to 2012 K24Z have oil consumption, ask. V6 J35 needs belt pre-2008. |
+| Honda Fit | Any generation |
+| Honda Insight | 2nd gen 2010 to 2014; IMA battery is the risk |
+| Mazda3 | Pre-2014 NA MZR; 2014+ SkyActiv-G also good |
+| Mazda6 | Pre-2014 4-cyl |
+| Mazda2 | Any |
+| Mazda Protege | 2.0L |
+| Subaru Impreza | Post-2012 FB20 SOHC; pre-2012 EJ25 has head-gasket risk |
+| Subaru Legacy | 4-cyl post-2010 FB25 |
+| Subaru Outback | 4-cyl post-2010 FB25 |
+| Lexus ES | 300/330 has 1MZ/3MZ belt; ES 350 has 2GR-FE chain |
+| Lexus IS | IS 250 4GR-FSE chain (DI carbon buildup); 2001 to 2005 IS 300 is the 2JZ-GE legend; 2016+ IS 300 is 8AR-FTS turbo or 2GR-FKS V6, not 2JZ |
+| Lexus GS | 300/350 chain; older GS 430 chain |
+| Acura TL | 3rd and 4th gen |
+| Acura TSX | Any; K24 chain |
+| Acura ILX | 2013 to 2015 2.4L manual K24Z7 is the enthusiast pick; 2.0L automatic is slow |
+| Scion xA / xB / xD | Toyota underneath |
+| Pontiac Vibe | Rebadged Toyota Matrix with GM dealership warranty history; often cheaper than the Matrix |
 
 **Small / midsize SUVs**
 
-- Honda CR-V (any pre-2017 K-series; turbo 1.5L post-2017 has known oil
-  dilution issues)
-- Toyota RAV4 (4-cyl any generation; 2007 to 2009 has the 2AZ oil-burn
-  TSB, verify oil-consumption history)
-- Toyota Highlander (V6 chain)
-- Toyota 4Runner (V6 1GR-FE chain; pre-2009 V8 has 2UZ belt)
-- Toyota Venza
-- Subaru Forester (FB25 post-2011)
-- Mazda CX-5 (SkyActiv-G 2.0 and 2.5)
-- Mazda CX-9 (post-2016 SkyActiv-G 2.5T; skip pre-2016 with 3.7L Duratec
-  V6, which has the internal-water-pump issue noted under "Specific
-  year/model traps")
-- Lexus RX (RX 350 with 2GR-FE chain; RX 300/330 has belt)
-- Lexus NX
-- Lexus GX (V8 4.7L 2UZ belt service is real money)
-- Honda Pilot (4th gen onward; J35 V6 belt pre-2008)
-- Acura MDX (post-2007 chain; pre-2007 belt)
-- Acura RDX (any)
+| Model | Notes |
+|---|---|
+| Honda CR-V | Any pre-2017 K-series; post-2017 turbo 1.5L has oil-dilution issues |
+| Toyota RAV4 | 4-cyl any gen; 2007 to 2009 has the 2AZ oil-burn TSB, verify |
+| Toyota Highlander | V6 chain |
+| Toyota 4Runner | V6 1GR-FE chain; pre-2009 V8 has 2UZ belt |
+| Toyota Venza | Any |
+| Subaru Forester | FB25 post-2011 |
+| Mazda CX-5 | SkyActiv-G 2.0 and 2.5 |
+| Mazda CX-9 | Post-2016 SkyActiv-G 2.5T; skip pre-2016 3.7L Duratec V6 (internal water pump, see year/model traps) |
+| Lexus RX | RX 350 with 2GR-FE chain; RX 300/330 has belt |
+| Lexus NX | Any |
+| Lexus GX | V8 4.7L 2UZ belt service is real money |
+| Honda Pilot | 4th gen onward; J35 V6 belt pre-2008 |
+| Acura MDX | Post-2007 chain; pre-2007 belt |
+| Acura RDX | Any |
 
 ## Tier 2: grandpa-car archetype
 
@@ -100,32 +89,25 @@ known-good year can be fine. But default posture is skeptical.
 
 **Avoid by default**
 
-- Jeep Compass / Patriot / Liberty (CVT failures, electrical issues)
-- Dodge Journey / Dart / Avenger / Caliber / Neon
-- Ford Focus and Fiesta with DCT (PowerShift dual-clutch failures, class
-  action settled)
-- Ford Fusion (Hybrid battery issues; 1.6L EcoBoost coolant intrusion)
-- Chevrolet Cruze (1.4L turbo head gaskets, electrical)
-- Chevrolet Cobalt / Aveo / Sonic / Spark
-- Chevrolet Malibu (eAssist generation electrical; 2.5L oil consumption)
-- Hyundai Sonata / Elantra / Veloster (Theta II 2.0L / 2.4L / 2.0T
-  rod-bearing recalls spanning 2011 to 2019; verify recall and KSDS
-  software update completion before buying)
-- Kia Optima / Forte / Soul / Sorento / Tucson (same Theta II engine
-  issues)
-- Nissan with CVT: Altima, Sentra, Versa, Maxima, Rogue, Murano,
-  Pathfinder (CVT failure is endemic, often before 100K)
-- Mitsubishi anything (parts availability)
-- Volkswagen / Audi non-TDI gas (timing chain tensioner failures on
-  2.0 TSI; carbon buildup; expensive everything)
-- BMW / Mercedes / Audi older than 8 years (maintenance cost trap unless
-  user is wrenching)
-- Mini Cooper (timing chain tensioner; expensive)
-- Fiat 500
-- Saturn / Pontiac (parts availability and dealer support gone). Pontiac
-  Vibe is the exception: it is a rebadged Toyota Matrix on Toyota's parts
-  catalog and lives in Tier 1.
-- Smart Car
+| Model | Why |
+|---|---|
+| Jeep Compass / Patriot / Liberty | CVT failures, electrical |
+| Dodge Journey / Dart / Avenger / Caliber / Neon | Across the board |
+| Ford Focus / Fiesta with DCT | PowerShift dual-clutch failures, class action settled |
+| Ford Fusion | Hybrid battery issues; 1.6L EcoBoost coolant intrusion |
+| Chevrolet Cruze | 1.4L turbo head gaskets, electrical |
+| Chevrolet Cobalt / Aveo / Sonic / Spark | Across the board |
+| Chevrolet Malibu | eAssist generation electrical; 2.5L oil consumption |
+| Hyundai Sonata / Elantra / Veloster | Theta II 2.0L / 2.4L / 2.0T rod-bearing recalls 2011 to 2019; verify recall + KSDS completion |
+| Kia Optima / Forte / Soul / Sorento / Tucson | Same Theta II engine issues |
+| Nissan with CVT (Altima / Sentra / Versa / Maxima / Rogue / Murano / Pathfinder) | CVT failure endemic, often before 100K |
+| Mitsubishi (any) | Parts availability |
+| Volkswagen / Audi non-TDI gas | 2.0 TSI timing chain tensioner failures; carbon buildup; expensive everything |
+| BMW / Mercedes / Audi older than 8 years | Maintenance cost trap unless user is wrenching |
+| Mini Cooper | Timing chain tensioner; expensive |
+| Fiat 500 | Across the board |
+| Saturn / Pontiac | Parts and dealer support gone (Pontiac Vibe is the Toyota Matrix exception, see Tier 1) |
+| Smart Car | Across the board |
 
 **Specific year/model traps**
 
