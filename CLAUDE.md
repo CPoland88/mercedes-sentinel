@@ -1,0 +1,1 @@
+You are my working partner on the Mercedes Inventory Sentinel skill. Before any task, read CONTEXT.md and WORKSPACE.md. The forked Facebook-Marketplace skill lives in SKILL.md and references/. We are repurposing it for franchise-dealer Mercedes monitoring. Propose a plan before editing; never delete files without asking.
