@@ -1,11 +1,13 @@
-# Reading a Carfax report
+# Carfax reading for a 2024 GLS
 
-A Carfax is the single most useful document in a used-car purchase, but
-only if you know what to look for. The headline summary ("No accidents
-reported, 32 service records") understates and overstates at the same
-time: it misses small defects and overweights cosmetic events.
+For a 2024 GLS candidate, the Carfax is necessary but not sufficient.
+The dealer-side **XENTRY / VeDoc** service record is more complete
+for MB-specific items (software updates, recall stamps, warranty
+work, TSB applications). **Pull both** — see section 12 below for
+the workflow.
 
-This guide walks through what to actually extract.
+This file covers what to extract from each, ordered by what most
+often kills a candidate at this price point and model year.
 
 ## What to extract, in order
 
@@ -13,215 +15,466 @@ This guide walks through what to actually extract.
 2. **Title history (state-by-state)**
 3. **Accident records**
 4. **Service-record density and consistency**
-5. **Specific service events (timing belt, transmission fluid, brakes,
-   battery, recalls, major repairs)**
-6. **Mileage progression**
-7. **Inspection / registration history**
-8. **Open recalls**
+5. **Service A / Service B (ASSYST PLUS) stamps**
+6. **MB-specific service items beyond A/B** (9G-Tronic ATF, 4MATIC
+   transfer case, brake fluid, AIRMATIC history, 48V mild-hybrid
+   for the 450)
+7. **M256 (450) and M177 (580) known-issue service records**
+8. **Mileage progression**
+9. **Inspection / registration history**
+10. **Open recalls** (lookup against NHTSA + MBUSA by VIN)
+11. **Cross-check Carfax against XENTRY / VeDoc**
 
-## Owner count: reconcile Carfax with seller's claim
+## 1. Owner count: reconcile with the seller's claim
 
-The Carfax owner count and the seller's claim often differ. Both can be
-honest.
-
-- Carfax counts every title transfer, including dealer-to-dealer flips
-  in the first month after manufacture.
-- A seller may say "I'm the second owner" meaning they bought it from
-  the original retail owner, even if Carfax shows 4 owners (dealer ->
-  original owner -> trade-in -> dealer -> seller).
+The Carfax owner count and the seller's claim can both be honest and
+disagree. Carfax counts every title transfer, including dealer-to-
+dealer flips. A "second owner" claim from a private seller may
+ignore those.
 
 **Rule:** ignore the raw owner count. Look at the gap between owner
-transitions. A 14-year-old car with 4 owners but where one owner held it
-for 12 years is effectively a one-owner car. A 5-year-old car with 4
-owners is a hot potato; ask why.
+transitions. For a 2024 GLS shopped in 2026 (1–2 years old), most
+candidates will have one retail owner. A 2-year-old GLS with 3+
+owners is a hot potato — ask why.
 
-## Title history
+## 2. Title history
 
-- **All in one state**: green flag. Local car, easier to verify history.
-- **Multiple states**: not bad, but verify each transition was a real
-  move and not a title-washing trick (state-hopping to clean a branded
-  title is a known curbstoner technique).
+- **All in one state**: green flag. Local car, easier to verify.
+- **Multiple states**: not bad if each transition is a real move.
+  State-hopping to clean a branded title is a known trick — if the
+  Carfax shows "title issue" anywhere in history, it stays.
 - **Branded title at any point** (salvage, rebuilt, flood, lemon-law
-  buyback, junk): walk unless the user is shopping projects. Note that
-  some states downgrade the brand on subsequent titles; if the Carfax
-  shows "title issue" anywhere in history, it's still salvage.
+  buyback): **auto-Pass** per CONTEXT. Also automatically disqualifies
+  from MB CPO per `references/mbusa-cpo-criteria.md`.
 
-## Accident records
+## 3. Accident records
 
-Carfax accident records come from:
+Carfax accident records come from police reports, insurance claims,
+body shops (only some), and DMV records (only severe). **"No
+accidents reported" is not the same as "no accidents."**
 
-- Police reports (only if the police were called)
-- Insurance claims (only if the owner filed)
-- Body shops (only some)
-- DMV records (only severe)
+For a 2024 GLS specifically:
 
-This means **"No accidents reported" is not the same as "no accidents."**
-A minor fender-bender paid out of pocket leaves no trace.
+- **Any accident with airbag deployment**: **auto-Pass** per CONTEXT.
+- **Structural damage reported**: **auto-Pass** per CONTEXT.
+- **Minor damage to one panel** with continued service afterward:
+  acceptable; price-anchor the cosmetic remediation if visible in
+  photos (per `references/trim-id-guide.md`'s cosmetic checks).
+- **Bodywork without a reported accident** (panel respray, paint
+  thickness inconsistent in photos): yellow flag. Ask the dealer.
+  At a 1–2 year-old MB price point, undisclosed body repair is a
+  meaningful concern.
 
-What to do:
+## 4. Service-record density and consistency
 
-- If Carfax shows accidents, read the severity. "Minor damage to left
-  front" with continued service afterward is usually fine. "Severe
-  damage" or "airbag deployment" is closer to a walk.
-- If Carfax shows no accidents but the car has obvious mismatched paint,
-  uneven panel gaps, or fresh body work, ask the seller and inspect
-  carefully.
-- Body work alone (without a reported accident) on the Carfax is a yellow
-  flag. Ask about it.
+The headline number to look for on a 2024 GLS at 15K–35K miles:
 
-## Service-record density and consistency
+| Mileage | Expected service-record count | Pattern |
+|:--|:--|:--|
+| 0–10K | 1 (PDI + first oil) | Single MB-dealer entry |
+| 10K–15K | 1–2 (PDI + Service A) | Mostly MB dealer |
+| 15K–25K | 2–3 (PDI + A + possibly B) | Should be all MB-dealer for a CPO candidate |
+| 25K–35K | 3–4 (PDI + A + B + A) | All MB-dealer or specialist independent |
 
-This is the most overlooked part of the Carfax and one of the most
-informative.
+**Good pattern:** all MB dealer or one MB-specialist independent.
+Regular Service A/B cadence (see section 5). Records start at PDI or
+delivery and continue without gaps.
 
-**Good pattern:**
+**Bad pattern:** sparse (1–2 stamps on a 25K+ mi 2024 GLS), service
+at many random shops, gaps > 10K miles between services, multiple
+visits for the same issue.
 
-- 20+ service records over the car's life
-- Mostly from the same dealership or independent shop (proves consistent
-  care)
-- Regular oil changes at roughly 5K to 10K intervals
-- Major services hit at expected mileage (transmission fluid, coolant,
-  spark plugs, timing belt where applicable)
-- A few non-routine repairs that were addressed promptly
+## 5. Service A / Service B (ASSYST PLUS)
 
-**Bad pattern:**
+The 2024 GLS uses Mercedes' **ASSYST PLUS** service-interval system
+(the US successor to the European-market "FSS" terminology). It
+calculates the next service adaptively but is capped at hard
+ceilings.
 
-- Sparse records (4 or 5 over 10 years means the car was DIY'd at best,
-  neglected at worst)
-- Service at many different shops (could be normal, but cluster of
-  cheapest shops is a flag)
-- Long gaps with high mileage accumulation (car was used hard with no
-  maintenance)
-- Major service events not present at expected mileage (no transmission
-  fluid in 130K miles is a flag)
-- Multiple visits for the same issue in a short window (recurring problem
-  that may not be fixed)
+| Service | Interval | What's done |
+|:--|:--|:--|
+| First Service A | 10,000 mi or 1 year, whichever first | Synthetic oil + filter, fluid top-off, multi-point inspection, wiper blades, reset |
+| Subsequent A ↔ B alternation | ~10,000 mi or 1 year between each | A then B then A then B, alternating |
+| Service B (extra items vs A) | every ~20,000 mi cumulative | Cabin filter, **brake fluid flush**, more detailed inspection. Engine air filter on B is dealer-variable |
+| Annual time ceiling | 1 year max regardless of miles | The car will flag "service due" by time even if miles are low |
 
-The number of service records is roughly proportional to how well the
-car was cared for. A car with 30+ records and an active recent
-maintenance history is among the safest used-car bets.
+**What a 2024 GLS at 20K–25K mi should show on Carfax:** 2–3 service
+stamps — roughly Service A ~10K, Service B ~20K, possibly a third
+Service A in progress. Absence is a real flag; the car either was
+neglected (rare on warranty MB) or had services done at a non-MB
+shop that didn't report to Carfax.
 
-## Specific service events to look for
+**Brake fluid caveat:** brake-fluid replacement is bundled into
+Service B every 2 years, and is **the most commonly skipped Service
+B item** per MBWorld and BenzWorld threads. Dealers sometimes
+invoice Service B without performing the flush. **Verify** that the
+line item appears in the detailed service record — if all you see is
+"Service B performed," ask the dealer to confirm brake fluid was
+actually replaced. Confidence: Medium on the skip-rate claim
+(anecdotal but well-attested).
 
-Pull these out and note when they were last done. Use the mileage at
-time-of-service, not the date.
+## 6. MB-specific service items beyond A/B
 
-| Service | Typical interval | Why it matters |
-|---|---|---|
-| Engine oil + filter | 5K to 10K | Most-recent date should be recent |
-| Transmission fluid (auto) | 30K to 60K | Skipped = transmission failure |
-| Transmission fluid (CVT) | 30K | CVT failure if neglected |
-| Coolant flush | 60K to 100K | Overdue = head gasket risk |
-| Spark plugs | 30K (copper) / 100K (iridium) | Iridium usually overdue |
-| Timing belt + water pump | 90K to 105K | See `timing-chain-vs-belt.md` for cost by engine |
-| Brake fluid flush | 30K | Often skipped, low priority |
-| Brake pads (front) | 30K to 50K | Note last replacement and current |
-| Brake pads (rear) | 60K to 100K | Often original on 100K cars |
-| Tires | 50K or 6 years | 6+ years old, replace regardless of tread |
-| 12V battery | 5 to 7 years | Note last replacement |
-| Power steering fluid | 100K | Often skipped, low priority |
-| Differential / transfer case (AWD) | 60K | AWD vehicles only |
+Items not on the standard ASSYST PLUS schedule but worth checking
+for at the 2024 GLS mileage band:
 
-For each service: subtract the last-done mileage from the current
-mileage. If the result is at or past the typical interval, budget for
-that service in the negotiation case.
+### 9G-Tronic transmission fluid (725.0 / 725.1)
 
-## Hybrid and EV-specific Carfax notes
+- **MB official:** "lifetime fill" — no scheduled service.
+- **Specialist consensus** (MBWorld, Blauparts, YouCANic,
+  themercedesservice.com): drain-and-fill at 40,000 mi; full service
+  60,000–80,000 mi.
+- **Fluid spec:** MB 236.17 (ATF 134 FE), ~9–11 L capacity.
+- **Cost (US 2026):** $600–$1,100 indy / $900–$1,500+ MB dealer.
 
-- **High-voltage battery replacement**: if the Carfax shows the hybrid /
-  EV battery was replaced, the meter starts over. A 12-year-old Prius
-  with a 2-year-old battery is much safer than a 6-year-old Prius with
-  the original.
-- **High-voltage battery NOT replaced on a 10+ year hybrid**: original
-  battery, in or near its failure window. Budget for replacement. See
-  `negotiation-framework.md` defect-cost table for current refurb and
-  lithium-conversion ranges by model.
-- **IMA / hybrid system fault codes** logged in service history: ask
-  what was done. Sometimes the battery was reconditioned, sometimes
-  ignored.
+**What to expect on Carfax for a 2024 GLS:** nothing. Absence is
+normal; presence (especially from an MB-specialist independent) is a
+positive signal of a proactive prior owner.
 
-## Mileage progression
+### 4MATIC transfer case fluid
+
+- **Not on MB scheduled maintenance.** Owner-discretion.
+- **Specialist consensus:** ~40,000 mi.
+- **Fluid spec varies by transfer case variant:** standard uses MB
+  236.12; Torque-on-Demand multi-disc clutch variant uses MB 239.41
+  (Ravenol TF-0870 / MB DTF-1). **Verify which variant the VIN has
+  before quoting fluid spec.**
+- **Cost:** $150–$350.
+
+**What to expect on Carfax:** typically nothing at 20K–40K mi.
+Absence is normal.
+
+### Brake fluid (2-year cadence)
+
+Already covered in section 5 (bundled into Service B). Worth
+explicitly verifying because of the skip pattern.
+
+### AIRMATIC air suspension service history
+
+The 2024 GLS ships with **AIRMATIC standard**. Pattern matters:
+
+**Failure modes** (extrapolated from MY20–23 X167; insufficient MY24
+data in 2026):
+
+- **Leaking front struts** — most common X167 issue. Symptoms:
+  vehicle sagging overnight, compressor running long after key-on,
+  "Vehicle level low / Visit workshop" warnings.
+- **Compressor failure** — usually secondary to a leaking strut
+  overworking the pump. Primary compressor failure is rarer pre-60K.
+- **Control module / software faults** — common enough that MB's
+  TSB `LI32.22-P-073368` calls out software updates as the first
+  remedy before mechanical replacement.
+
+**Cost (US 2026, dealer):**
+
+- Single front strut: $1,800–$2,500 installed
+- Rear strut: similar to slightly less
+- Compressor: parts $300–$600, installed $800–$1,400
+- Control module: $200–$500 + diagnostic
+
+**Carfax red flags:**
+
+1. Any "suspension" or "AIRMATIC" line within first 30K mi →
+   unusual at this mileage, investigate
+2. **Multiple** AIRMATIC visits → likely chronic leak chasing
+3. A single TSB / software-update visit → benign, often the fix
+4. Compressor replacement without simultaneous strut inspection →
+   may not be fully resolved
+
+### 48V mild-hybrid system (GLS 450 only)
+
+The 450's M256 inline-6 includes an **ISG (Integrated Starter-
+Generator)** + 48V system + eBooster. Carfax entries to look for:
+
+- **"Starter-generator" / "ISG" R&R** — significant red flag at any
+  mileage. ISG R&R is $2,000–$3,000.
+- **48V battery replacement** — $2,000–$3,000.
+- **eBooster diagnostic** — occasional; acceptable as a single
+  documented visit.
+- **Recall 24V-207 completion** (48V ground connection / fire risk)
+  — see section 10. MY24 GLS 450 is **mostly excluded** from the
+  original VIN range but verify per candidate.
+
+## 7. M256 (450) and M177 (580) known-issue records
+
+**Confidence framing:** nearly all of the items below are
+**extrapolated from MY19–MY23 patterns**. MY24 vehicles in 2026 are
+0–2 years old, mostly under warranty, and not enough have reached
+failure-prone mileage to call any of this "documented for MY24."
+Treat as risk vectors, not certainties. Mark
+`extrapolated-from-prior-MY needs-validation` in any verdict that
+cites these.
+
+### M256 (GLS 450)
+
+| Known issue | Typical onset | Carfax signal to watch for |
+|:--|:--|:--|
+| Oil consumption / piston ring wear | 40K+ mi | Frequent oil top-offs invoiced; consumption test |
+| Electric coolant pump failure | Varies; early MY had wiring chafe TSB | Coolant pump R&R line item |
+| ISG faults | Reported, not epidemic | "Starter-generator" / "48V system" R&R |
+| 48V battery failure | Reported | 48V battery replacement |
+| eBooster faults | Occasional | Diagnostic + R&R |
+| Timing chain noise | Higher-mileage (60K+) | Rare pre-60K |
+
+### M177 (GLS 580)
+
+| Known issue | Typical onset | Carfax signal to watch for |
+|:--|:--|:--|
+| Valve cover gasket / oil cooler O-ring leaks | 50K+ mi | Valve cover gasket R&R, oil cooler line |
+| Oil cooler line crimp-fitting seepage | 50K+ mi | Same as above |
+| Engine-mounted water-to-air intercooler leaks | Variable | Intercooler R&R, coolant top-off pattern, misfire codes |
+| Carbon buildup on intake valves (DI engine) | 60–80K mi | Rare on Carfax pre-50K |
+| Timing chain stretch | 80K+ mi | Rare pre-80K |
+| Lifter rattle / collapsed lifters | Documented on M178 (AMG GT) and M177 in C63/E63/G63 contexts; **not** pattern-documented on GLS 580 M177 specifically | "Top end noise" diagnostic visits |
+
+## 8. Mileage progression
 
 Look at the mileage column over time. It should increase monotonically
 at a roughly consistent rate.
 
-- **Rate of accumulation**: average annual miles. 7K to 15K is normal.
-  Under 5K is a grandpa car (good). Over 20K is a road-warrior commuter
-  car (more wear).
-- **Mileage that goes backwards**: odometer rollback. Walk first, then
-  report. Do NOT confront the seller in person; rollback is fraud, the
-  seller knows it, and confrontations at a meet can escalate. Tell the
-  seller the car isn't a fit, leave, then report to the state AG and
-  the NHTSA odometer fraud line.
-- **Long flat periods**: car was parked. Could be normal (snowbird
-  storage); could be theft / impound / collision.
+- **Rate of accumulation:** typical MB SUV is 8K–14K mi/year. Under
+  5K/yr is grandpa/garage-queen territory (often good). Over 20K/yr
+  is road-warrior commuter (more wear).
+- **Mileage that goes backwards:** odometer rollback. **Walk first,
+  then report.** Do not confront the seller in person. Report to the
+  state AG and the NHTSA odometer fraud line.
+- **Long flat periods:** car was parked. Could be normal; could be
+  theft / impound / collision. Investigate.
 
-Compare the most recent Carfax mileage to the odometer in the listing
-photos. If the photo shows less mileage than the most recent Carfax
-record, the car has been driven backwards or the listing is stale.
+Compare the most recent Carfax mileage to the odometer in the
+listing photos. If the photo shows less mileage than the most recent
+Carfax record, the car has been driven backwards or the listing is
+stale.
 
-## Inspection / registration history
+## 9. Inspection / registration history
 
-Annual state inspections (in states that have them) show whether the car
-has been continuously road-legal. A gap in inspections means the car was
-either off the road for a year or registered in a non-inspection state.
+Less applicable to a 2024 GLS at 1–2 years old than to an older car
+— most states don't require inspection until the car is older. For
+states that do (VA among them), a fresh state safety inspection
+sticker visible in photos is a small positive signal.
 
-A **failed inspection followed by immediate re-inspection and pass** is
-fine; the seller fixed the issue. A failed inspection with no follow-up
-means the car was either parked or sold for parts.
+## 10. Open recalls
 
-## Open recalls
+**Two lookup channels by VIN:**
 
-Carfax lists open (unfulfilled) recalls. Most are minor; some are major.
+- **NHTSA:** `https://www.nhtsa.gov/recalls` — authoritative for US
+  safety recalls.
+- **MBUSA:** `https://www.mbusa.com/en/recall` — also surfaces
+  non-safety service campaigns.
+- **MBUSA Customer Assistance:** 1-800-367-6372.
 
-- **Airbag recalls (Takata):** verify completion. Affects ~tens of
-  millions of cars. Easy fix at any dealer for free; just hasn't been
-  done if the car never went back.
-- **Engine recalls (Hyundai/Kia Theta II):** confirm completion before
-  buying. If open, the engine is at risk of failure and the dealer will
-  refuse to replace it without specific oil-burn evidence.
-- **Other safety recalls:** lower priority but factor in a free dealer
-  visit.
+**Current recall picture for 2024 GLS (as of 2026):**
 
-Open recalls are not deal-breakers (the dealer will perform them for
-free), but they should be completed before the title transfers if at all
-possible.
+| NHTSA Campaign | Subject | MY24 GLS applicability |
+|:--|:--|:--|
+| **24V-207** | 48V ground connection under passenger seat — fire risk | Mostly 2019–2023; **MY24 GLS 450/580 largely excluded** — verify by VIN |
+| **24V-118** | TCU software / 9G-Tronic behavior | 2020–2023 GLE/GLS 450 — **MY24 explicitly excluded** |
+| **Mid-2025 windshield bonding** | Multi-purpose camera + interior mirror may separate from windshield | **Includes 2024 GLS 450 4MATIC built Jun 5 – Oct 12, 2024** — very narrow VIN window; verify per candidate |
 
-## Carfax vs the AutoCheck and the actual title
+**Recall lists are time-sensitive.** New recalls publish monthly. The
+skill should treat any frozen list as stale on a 60-day horizon —
+always re-check NHTSA by VIN at the time of evaluation.
 
-Carfax is not the only history report. AutoCheck (Experian) sometimes
-catches events Carfax misses, and vice versa. If a Carfax looks
-suspiciously clean given the car's age, an AutoCheck is $25 and worth
-the second opinion.
+Open recalls are not deal-breakers (the dealer performs them free),
+but should be completed before the title transfers if possible. A
+non-CPO car with open recalls AND no dealer-side service history for
+recall completion is a yellow flag — pull the XENTRY record to
+verify.
 
-The actual paper title is the definitive document. Verify it at meet-up
-matches the seller's name, the VIN, and is unbranded.
+## 11. Specific service events to look for
 
-## Putting it together: producing a summary
+Pull these out and note when last done. Use mileage at time-of-
+service, not date.
 
-When the user gives you a Carfax, return:
+| Service | MB interval | Why it matters at this MY |
+|:--|:--|:--|
+| Engine oil + filter | Service A interval | Most-recent should be recent |
+| Cabin filter | Service B (~20K) | If absent at 20K+, ask |
+| Brake fluid flush | Service B (every 2 yr) | Most-skipped item — verify line item |
+| Brake pads (front) | 30K–50K | Note current measurement if PPI done |
+| Brake pads (rear) | 60K–100K | Often original at 30K |
+| Tires | OEM Continental / Pirelli, typically 30K–40K life | DOT date code matters; replace if >4 yr regardless of tread |
+| 12V battery | 5–7 yr | Note if replaced (especially relevant for 48V-equipped 450) |
+| Differential / transfer case fluid | Owner discretion ~40K | Bonus if done |
+| 9G-Tronic ATF | MB "lifetime"; specialist 40K | Absence normal at 20–40K |
+| AIRMATIC compressor/strut | None scheduled | Any entry is signal |
+
+For each service: subtract the last-done mileage from current
+mileage. If at or past the typical interval, budget for that service
+in the negotiation case (per
+`references/negotiation-framework.md` once rewritten).
+
+## 12. Carfax vs XENTRY / VeDoc — pull both
+
+The dealer-side XENTRY system captures items that often don't flow
+to Carfax. This is the single most important point on this page for
+a 2024 GLS evaluation.
+
+**What XENTRY captures that Carfax often misses:**
+
+- Software updates and TSB applications (rarely flow to Carfax)
+- Warranty repairs not coded as "service" by the dealer's DMS
+- Recall completion stamps (sometimes delayed or absent on Carfax)
+- Pre-delivery inspection (PDI) and port-installed options
+- Goodwill repairs
+
+**What Carfax captures that XENTRY misses:**
+
+- Independent shop visits (XENTRY only sees MB-dealer activity)
+- State inspections, emissions, title events
+- Accident / airbag records
+- Tire shop / alignment shops
+
+**Recommendation:** pull both. Workflow:
+
+1. **Carfax** (or AutoCheck) from the selling dealer or via your own
+   account — covers ownership, accident, title, indy-shop history.
+2. **XENTRY Digital Service Booklet / VeDoc report** from the
+   selling MB dealer's Parts or Service department. Suggested
+   phrasing:
+   > "Could your Service department print the XENTRY Digital
+   > Service Booklet / VeDoc record for VIN ______? I want to
+   > review the full MB-dealer service history including any
+   > recall and software-update status."
+3. If the seller is a private party or non-MB dealer, ask **MBUSA
+   Customer Assistance (1-800-367-6372)** to look up the VIN's
+   service history, **or** ask any MB dealer's service writer to
+   print VeDoc for the VIN — most will do it on request, though
+   policy varies by dealer.
+
+A dealer who refuses to print VeDoc without good reason is a signal
+worth noting in `references/dealer-tier-list.md`.
+
+## 13. Carfax vs AutoCheck
+
+Carfax is the dominant report; AutoCheck (Experian) sometimes
+catches events Carfax misses, especially auction history (AutoCheck
+has stronger Manheim integration). If a Carfax looks suspiciously
+clean given the car's history, AutoCheck is ~$25 and worth the
+second opinion.
+
+The actual paper title is the definitive document. Verify at meet-up
+that VIN matches, name matches the seller's ID, and there are no
+liens or brands.
+
+## 14. Summary output template
+
+When given a Carfax + XENTRY for a 2024 GLS candidate, return:
 
 ```
-Carfax summary:
-- Owners: N (pattern: one long-term + recent flip / hot-potato / etc.)
-- Title: clean across all states / branded in [state] in [year]
-- Accidents: none / N reported (severity)
-- Service records: N over Y years (density: dense / normal / sparse)
-- Most recent service: [date] at [mileage] for [what]
-- Last transmission fluid: [date / mileage] (current: due / not due)
-- Last coolant: [date / mileage] (current: due / not due)
-- Last spark plugs: [date / mileage] (current: due / not due)
-- Last timing belt: N/A (chain) / [date / mileage] / never done (due)
-- Brakes: front pads [date / mileage] / rear pads [date / mileage]
-- 12V battery: [date / mileage]
-- Hybrid battery: original / replaced [date / mileage] / N/A
-- Open recalls: [list]
-- Mileage progression: consistent / suspicious / rollback
+Carfax + XENTRY summary — [VIN, year/trim/dealer]:
 
-Risk summary: [1-2 sentences]
+Ownership:
+- Owners: N (pattern: single retail / hot-potato / fleet history)
+- Title: clean across all states / branded in [state] in [year]
+
+Accidents:
+- Carfax: none / N reported (severity per record)
+- Photo cross-check: clean / panel respray suspected / visible damage
+
+Service history density:
+- Carfax records: N over Y months
+- XENTRY records: N over Y months (delta from Carfax: M items)
+- Pattern: all-MB-dealer / mixed / sparse
+
+Service A/B history (ASSYST PLUS):
+- Service A stamps: [dates / mileages]
+- Service B stamps: [dates / mileages]
+- Brake fluid verified in last B: yes / no / unable to confirm
+
+MB-specific items:
+- 9G-Tronic ATF: not done (normal at this mileage) / done at [date / mi]
+- 4MATIC transfer case: not done / done at [date / mi]
+- AIRMATIC entries: none / [list]
+- 48V/ISG entries (450): none / [list]
+
+Known-issue records (extrapolated-from-prior-MY needs-validation):
+- M256 (if 450): [oil consumption / coolant pump / etc., or "none"]
+- M177 (if 580): [valve cover / oil cooler / etc., or "none"]
+
+Mileage:
+- Progression: consistent / suspicious / rollback
+- Photo odometer vs latest Carfax: matches / mismatch
+
+Open recalls (NHTSA lookup by VIN):
+- [list], all complete / N open: [list]
+
+Risk summary: [1–2 sentences]
 Negotiation levers: [list of dated, specific defects or upcoming services]
 Near-term spend (first 12 months): $X to $Y
 ```
 
-That summary plus the seller-profile check plus a PPI is enough to make a
-buy/walk decision.
+## 15. Worked example — Fredericksburg 450 candidate
+
+VIN `4JGFF5KE0SB######` (production sequence redacted; full VIN held
+in session context). 2024 GLS 450 4MATIC, Tuscaloosa-built. Mileage
+TBD from listing.
+
+**Pull sequence:**
+
+1. **Carfax** — request from Fredericksburg Sales as part of the
+   standard pre-purchase package. CPO listings typically include
+   Carfax free per `references/mbusa-cpo-criteria.md`.
+2. **XENTRY Digital Service Booklet / VeDoc** — request from
+   Fredericksburg Service department per section 12 phrasing.
+3. **NHTSA recall lookup** — paste VIN at
+   `https://www.nhtsa.gov/recalls` to verify the windshield/mirror
+   recall window (Jun 5 – Oct 12, 2024 build). Any candidate built
+   in that window must show the recall completed before scoring
+   past Stage 3.
+
+**What to fill in once data lands:**
+
+- Owner count + pattern
+- Any accident records (with severity)
+- Service A / B stamp count at current mileage (expectation: 2–3
+  stamps for typical 20K–25K mi range)
+- Brake fluid verified in last Service B
+- Any AIRMATIC entries (auto-flag if more than one)
+- Any 48V/ISG entries (auto-flag for further investigation)
+- Recall completion status for 24V-207 and the windshield-bonding
+  campaign if applicable
+
+**Dealer-responsiveness read:**
+
+Note in `references/dealer-tier-list.md` how Fredericksburg
+responds to the VeDoc request. A Parts/Service writer who pulls it
+in 30 seconds without fuss is **KNOWN-GOOD**; one who deflects or
+claims they "can't share that" is a signal that correlates with
+other transparency issues later.
+
+## Cross-references
+
+- `CONTEXT.md` — title and accident thresholds (clean only;
+  no structural or airbag deployment events).
+- `references/mbusa-cpo-criteria.md` — CPO eligibility excludes
+  branded titles and ties to service-history continuity. CPO
+  listings should include Carfax; ask if not provided.
+- `references/gls-trim-decoder.md` — the data-card workflow
+  pairs with the XENTRY request; both come from the same dealer
+  Parts/Service contact.
+- `references/trim-id-guide.md` — photo cross-check against
+  Carfax accident records (mismatched paint, panel-gap issues).
+- `references/comp-pricing-framework.md` — overdue services and
+  near-term-spend estimates feed the comp-adjustment math.
+- `references/dealer-tier-list.md` — dealer responsiveness on
+  Carfax / VeDoc requests is a tier-list-updating signal.
+- `references/negotiation-framework.md` *(to be rewritten)* —
+  dated defects and overdue services are the lever inputs.
+
+## Open calibration items
+
+- **MY24-specific known-issues data** for M256 and M177 is
+  extrapolated from MY19–23 patterns. As MY24 vehicles age and
+  warranty repairs become public, this list will sharpen.
+- **2024 GLS US Maintenance Booklet exact wording** for Service A/B
+  scope — verify against the PDF at MBUSA's owner-manual portal if
+  the dealer disputes a line item.
+- **Transfer case variant per VIN** — standard vs Torque-on-Demand
+  multi-disc clutch — affects fluid spec; confirm via VIN before
+  quoting service costs.
+- **Recall list is time-sensitive** — refresh against NHTSA on every
+  candidate evaluation, even if the file was updated recently.
+- **Dealer willingness to print VeDoc for non-customers** varies by
+  rooftop and individual writer. Track per-dealer responses in
+  `references/dealer-tier-list.md` as data accumulates.
