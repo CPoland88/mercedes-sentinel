@@ -6,7 +6,43 @@ the gas money is spent. **Build sheet beats photo every time** — when
 something matters, demand the Monroney or VeDoc rather than squinting
 at a JPEG. Each claim below carries a confidence rating; anything
 **Low** should be marked `needs-validation` against the first real
-2024 GLS the skill scores.
+2024-or-newer GLS the skill scores.
+
+---
+
+## Photo-fetching workflow — pull and view, don't just defer
+
+When a listing has an internal conflict (e.g., feature list claims
+both "6-seat captains" and "7-seat configuration") or any question
+is **photo-resolvable**, the skill should **pull the relevant photo
+via `web_fetch` and view it directly** rather than defer to "demand
+from dealer" or rely on the user's manual inspection.
+
+Mechanics:
+
+1. **Identify diagnostic photo(s).** Most resolutions only need one
+   or two specific shots (e.g., a 2nd-row interior view for seating;
+   a B-pillar sticker close-up for paint code).
+2. **Fetch the image URL.** Dealer-page fetches return image URLs
+   in the markdown content; CDN paths (e.g.,
+   `vehicle-images.carscommerce.inc/...`) are then valid for
+   subsequent `web_fetch` calls because they appeared in the prior
+   fetch result.
+3. **View the image.** The skill is multimodal; viewing the
+   downloaded image directly resolves the conflict without a
+   round-trip to the dealer.
+4. **Only escalate to "demand from dealer"** when the diagnostic
+   photo isn't in the listing AND can't be inferred from the
+   available set.
+
+When NOT to use this workflow:
+- For build-sheet-only items (Pinnacle trim, Driver Assistance
+  Package, Acoustic Comfort) — pull the Monroney instead.
+- For CPO verification — call 1-800-FOR-MERCEDES (no photo
+  evidence is authoritative).
+
+This adds two minutes to triage and eliminates whole categories of
+"unverified" downgrades in the verdict block.
 
 ---
 
@@ -362,13 +398,52 @@ hide real defects. For each, a specific photo request that defeats it.
 ## 6. Worked example — Fredericksburg 450 candidate
 
 VIN `4JGFF5KE0SB######` (production sequence redacted; full VIN held
-in session context). VIN-decode confirms 2024 GLS 450 4MATIC,
-Tuscaloosa-built. User reports color is off-spec from CONTEXT.
+in session context). VIN-decode confirms **2025 GLS 450 4MATIC**,
+Tuscaloosa-built (year-letter `S` = 2025 per FMVSS 565).
 
-### Photo-request sequence to send Mercedes-Benz of Fredericksburg
+### Findings confirmed by end-to-end calibration test
 
-Send to the Internet Sales / Product Specialist contact for the
-listing. Suggested phrasing:
+The candidate was evaluated against the live dealer listing at
+Mercedes-Benz of Fredericksburg and against direct photo inspection.
+Confirmed:
+
+- **Year:** 2025 (per VIN position 10 = `S`). Within scope per
+  CONTEXT "MY2024 or newer" — but originally a Pass under the
+  pre-widening 2024-only spec.
+- **Color:** Obsidian Black Metallic. **Off-spec** per CONTEXT
+  acceptable factory colors (Emerald Green Metallic, Twilight Blue
+  Metallic). Resolved from listing metadata, not from a color-
+  ambiguous photo.
+- **Seating:** **6-seat captain's chairs** (confirmed by direct
+  photo inspection of the listing's 2nd-row image set). The
+  listing's feature list claimed BOTH "Captain Chairs (6 seater)"
+  AND "7-Seat Configuration" — a classic dealer-data-pipeline
+  conflict; photos resolve it.
+- **Trim:** Almost certainly **Premium** (not Pinnacle). The
+  listing's feature list explicitly includes "MB-Tex Upholstery,"
+  which is the Premium-base upholstery; Exclusive upgrades to
+  leather standard, and Pinnacle layers on top of Exclusive. The
+  listing never claims Pinnacle. **Fails CONTEXT must-have.**
+- **Burmester:** Listing claims "Burmester High End 3D Surround"
+  but also lists "13 Speakers" — the 3D system has 26-29
+  speakers. **The claim is contradicted by the spec** in the same
+  listing; it's almost certainly just standard Burmester.
+- **CPO:** Claimed by dealer in listing badging. NOT
+  independently verified — needs 1-800-FOR-MERCEDES call with VIN
+  per `references/mbusa-cpo-criteria.md`.
+
+**Net verdict per CONTEXT:** PASS on three independent grounds
+(off-spec color, Premium trim not Pinnacle, dealer-pipeline
+inconsistency on Burmester). The model year is now in-scope after
+the year-scope widening commit but the other three failures hold.
+
+### Photo-request sequence (retained for future Fredericksburg candidates)
+
+Retained as a workflow reference for any future Fredericksburg
+candidate that clears the initial CONTEXT spec and warrants deeper
+photo inspection beyond what the listing exposes. Send to the
+Internet Sales / Product Specialist contact for the listing.
+Suggested phrasing:
 
 > "I'm interested in this GLS but need a few additional photos before
 > I make the trip. Could you send the following, ideally taken in the
