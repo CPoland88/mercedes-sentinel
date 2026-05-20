@@ -68,12 +68,11 @@ see WORKSPACE.md.
 
 - **Pinnacle trim** (vs. Premium / Exclusive) — **Must-have**
 - **Executive Rear Seat Package** — heated/ventilated/reclining rear
-  captain's chairs, rear console — **Nice-to-have** (only applies to
-  the 6-seat variant)
+  captain's chairs, rear console; the Plus variant bundles the MBUX
+  Rear Tablet — **Nice-to-have** (only applies to the 6-seat variant)
 - **Driver Assistance Package** — **Nice-to-have**
 - **Acoustic Comfort Package** — **Must-have**
 - **Warmth & Comfort Package** — **Must-have**
-- **MBUX Rear Tablet / rear-seat entertainment** — Indifferent
 - **Burmester 3D surround** — Nice-to-have
 - **Air Balance / cabin fragrance** — Indifferent
 - **Trailer hitch** — Indifferent
