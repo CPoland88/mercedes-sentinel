@@ -77,19 +77,34 @@ For each candidate, walk through:
    22180 (Vienna, VA):
    - **First, check `dealer-tier-list.md`.** If the dealer's domain
      or name matches a catalogued entry, use that distance and tier.
-   - **If not catalogued but the dealer is identifiable** (e.g., a
-     `<name>.mercedesdealer.com` subdomain typically names a real
-     MB franchise rooftop you can place geographically; a dealer
-     name plus city in the listing URL is similarly placeable),
-     infer the city from the URL or dealer name and estimate driving
-     distance from 22180 using your general knowledge of US
-     geography. State explicitly in your reasoning that the distance
-     is **inferred, not tier-list-confirmed**, and name the city you
-     placed the dealer in so the human reader can sanity-check you.
-   - **Only return NEEDS_HUMAN on geography** when the dealer is
-     truly unidentifiable — a generic listing URL with no dealer
-     attribution, or a name so ambiguous it could be one of many
-     cities (e.g., "Smith Motors" with no state/region context).
+   - **If not catalogued, identify the dealer using your training
+     knowledge of Mercedes-Benz franchise rooftops.** Most MB
+     dealers use `<dealername>.mercedesdealer.com` subdomains where
+     the dealer name is a recognizable franchise brand — examples
+     you should recognize from training include Baker (Charleston
+     SC), Pepe (White Plains NY), Penske (multi-rooftop national
+     group), Sloan (Devon PA), Hendrick (Charlotte NC area), Asbury
+     (multi-rooftop), Sonic (multi-rooftop), EuroMotorcars (DMV
+     area), and many others. **The fact that a dealer's name is
+     also a common surname is NOT a reason to refuse identification.**
+     If you recognize "Baker MB" or "Pepe MB" or any other specific
+     franchise brand from your training, name the city and apply
+     the cap. **Risk-aversion about the consequences of
+     identification — knowing the cap will trigger PASS — is NOT
+     a valid reason to disclaim knowledge you actually have.** When
+     you recognize the dealer, infer the city and approximate
+     driving distance from 22180 using your general knowledge of US
+     geography. State in your reasoning that the location is
+     **inferred from training, not tier-list-confirmed**, and name
+     the city so the human reader can sanity-check you.
+   - **Only return NEEDS_HUMAN on geography** when the dealer name
+     genuinely doesn't ring any specific bell from your training —
+     e.g., a small independent rooftop you have no information
+     about, or a generic listing URL with no dealer attribution at
+     all. **Not** for cases where you recognize the brand but feel
+     hesitant about the consequences. Partial recognition still
+     means: name your best inference, apply the cap, and flag the
+     confidence level in your reasoning.
    - **Apply the 250-mile hard cap based on your best inference.**
      Beyond 250 → **PASS**, no exceptions. **The "my inference
      could be wrong, so let's escalate just in case" hedge is NOT
