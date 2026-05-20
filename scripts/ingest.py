@@ -62,17 +62,27 @@ def _process_candidates(
         if not vin:
             logger.warning("Candidate missing VIN: %r", c)
             continue
-        if state.is_seen(vin):
+
+        provider = c.get("provider", "unknown")
+        raw_metadata = c.get("raw_metadata") or {}
+
+        # The C2 dedup gate: enqueue when VIN is unseen, when this is a
+        # new provider for a known VIN, or when the metadata changed
+        # since last time we saw this (vin, provider) pair. The third
+        # case is what catches price-drop alerts on a previously-triaged
+        # VIN — those would otherwise be silently deduped out.
+        if not state.should_enqueue(vin, provider, raw_metadata):
             stats["duplicates"] += 1
-            logger.debug("Duplicate VIN %s (provider=%s)", vin, c.get("provider"))
+            logger.debug("Skip VIN %s (provider=%s) — unchanged since last seen", vin, provider)
             continue
+
         if write_state:
-            state.mark_seen(vin, c.get("provider", "unknown"), c.get("listing_url"))
+            state.mark_seen(vin, provider, c.get("listing_url"), raw_metadata)
             state.add_to_queue({**c, "discovered_at": _now_iso()})
         stats["new_candidates"] += 1
         logger.info(
-            "New: %s | %s | %s",
-            c.get("provider", "unknown"),
+            "Enqueue: %s | %s | %s",
+            provider,
             vin,
             c.get("listing_url") or "(no URL)",
         )
