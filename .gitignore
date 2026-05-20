@@ -35,3 +35,16 @@ build/
 
 # Logs
 *.log
+
+# Sentinel runtime state — written by scripts/ingest.py at runtime.
+# These contain dealer-identifying data (specific dealerships, VINs of
+# vehicles in active negotiation) that doesn't belong in a public fork.
+# data/.gitkeep is the explicit allow that keeps the dir itself tracked.
+data/seen-vins.json
+data/queue.json
+data/triaged.json
+
+# Real .eml fixtures saved from your inbox — same reasoning as above.
+# Synthetic in-memory tests live in scripts/tests/test_*.py and are
+# tracked. See scripts/tests/fixtures/README.md.
+scripts/tests/fixtures/*.eml

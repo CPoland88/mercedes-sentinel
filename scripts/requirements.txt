@@ -1,0 +1,13 @@
+# Runtime dependencies for scripts/ingest.py (C1).
+# C2 will add `anthropic` for autonomous triage.
+
+# .env loading at process start (IMAP creds, later: ANTHROPIC_API_KEY)
+python-dotenv>=1.0,<2.0
+
+# HTML stripping in the fallback parser when an alert ships HTML-only
+# (no text/plain alternative).
+beautifulsoup4>=4.12,<5.0
+
+# Reserved for C2 — Claude API client. Pinned to the major series we
+# tested against.
+# anthropic>=0.40,<1.0
