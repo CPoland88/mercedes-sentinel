@@ -60,7 +60,8 @@ MBUSA locator before relying on it in scoring.
 - **Mercedes-Benz of Wilmington** (Wilmington, DE) — ~110 mi.
 - **Mercedes-Benz of Richmond** (Richmond, VA) — ~110 mi.
 - **Mercedes-Benz of Midlothian** (Midlothian, VA) — ~110 mi.
-  **Current 580 candidate per CONTEXT.md.**
+  Previously a 580 candidate; SOLD per CONTEXT.md live-candidates
+  log.
 - **Mercedes-Benz of Charlottesville** (Charlottesville, VA) — ~115 mi.
 - **Mercedes-Benz of Lancaster** (Lancaster, PA) — ~120 mi.
 - **Sun Motor Cars Mercedes-Benz** (Mechanicsburg, PA) — ~130 mi
@@ -84,6 +85,22 @@ MBUSA locator before relying on it in scoring.
 - **Mercedes-Benz of North Hills / Wexford** (Pittsburgh area, PA) —
   ~245 mi (borderline; verify exact rooftop).
 
+## Beyond 250 mi — auto-Pass
+
+These rooftops are referenced here because they've appeared in
+saved-search alerts or calibration tests, but they're explicitly out
+of geography per `CONTEXT.md` and never get scored as live candidates.
+
+- **Mercedes-Benz of White Plains** (White Plains, NY 10606) —
+  ~254–256 mi from 22180. Parent group: **Pepe Auto Group**. Sole
+  rooftop encountered in calibration. Doc fee data point: **$175
+  doc + $100 fuel = $275 total fees** — much lower than NoVA's
+  $999. Used for the inverted 580-preferred calibration via VIN
+  `4JGFF8FE1RB057816` (2024 580, Pinnacle-likely, all CONTEXT
+  must-haves present, blue) — would have been a strong Action
+  candidate inside the 250-mi cap; recorded as auto-Pass on
+  geography.
+
 ## Dealer groups to recognize across rooftops
 
 Listings on AutoTrader / Cars.com / CarGurus often belong to multi-
@@ -93,10 +110,12 @@ applies across every rooftop.
 
 Common groups serving the 250-mi region include Penske Automotive,
 EuroMotorcars (Holman), AutoNation, Lithia/Driveway, Group 1, Sonic,
-Hendrick, Asbury, Charles Barker, and **Huber Motor Cars**
-(confirmed Fredericksburg, may operate other regional rooftops —
-verify as encountered). Tag each rooftop above with its parent
-group as you verify it.
+Hendrick, Asbury, Charles Barker, **Huber Motor Cars** (confirmed
+Fredericksburg, may operate other regional rooftops — verify as
+encountered), and **Pepe Auto Group** (confirmed via White Plains
+NY rooftop, which is out of geography; verify any nearer Pepe MB
+stores if they surface in alerts). Tag each rooftop above with its
+parent group as you verify it.
 
 ## Notes on use
 
