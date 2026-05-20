@@ -34,9 +34,12 @@ built in Tuscaloosa, AL, production sequence ######."
 ## Engine variant — 450 vs 580 from the VIN
 
 Positions 6–7 carry the variant code. The differentiation matters:
-the 450 (M256 inline-6 with EQ Boost mild hybrid) and the 580 (M177
-biturbo V8 with EQ Boost) are economically distinct cars per
-CONTEXT — 5-year TCO delta is ~$25K favoring the 450.
+per CONTEXT, the **580 (M177 biturbo V8 + Air Body Control) is the
+preferred default trim** for Katie's QoL frame; the **450 (M256
+I6 + AIRMATIC) is the alternative only when its ask is ≥ $15K
+below the comparable 580**. The 5-year TCO delta of ~$25K favors
+the 450 — but only at acquisition-discount gaps that overcome the
+QoL preference.
 
 | Pos 6–7 | Variant | Engine | Notes |
 |:--|:--|:--|:--|

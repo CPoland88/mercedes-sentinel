@@ -93,11 +93,16 @@ Check whether the alert-ingestion pipeline is available.
   (rare 6-seat config, unusual factory color, low-volume option
   combo). When IMV is thin, cross-check AutoTrader history and
   recently-sold comps.
-- **580s must clear a materially lower ask** than comp 580s to
-  compete with the 450 alternative on 5-yr TCO (CONTEXT pegs the
-  delta at ~$25K). Document the TCO note on every 580 candidate
-  explicitly. A 580 priced at the going market rate is a Watch or
-  Pass by default — Action requires a visible price advantage.
+- **580 is the preferred default trim.** Per CONTEXT, Katie strongly
+  prefers the 580 for its V8 + standard upgraded suspension (AMG
+  Line + Air Body Control vs base AIRMATIC). **A 580 priced at
+  typical market is an Action candidate by default** when all
+  other CONTEXT criteria pass. The **450 is the alternative only
+  when its ask is ≥ $15K below the comparable 580** — at that gap
+  the acquisition savings + ~$25K 5-yr TCO advantage outweigh the
+  QoL preference. 450 candidates that don't clear the trigger are
+  Pass by default. Surface the 580↔450 comparison on every
+  candidate so the trigger check is explicit.
 
 ## Output format
 
@@ -115,7 +120,7 @@ Packages present: ...
 Must-haves missing: ... (dollar value of gap vs CONTEXT: $N)
 IMV trailing-90d: $... — ask is [N% under | N% over | at] IMV
 Options delta vs median comp: [+$N | -$N]
-580→450 TCO note: [N/A if 450 | "ask is $X above 450-equivalent TCO break-even"]
+Trim preference note: [580: default Action, no trigger check needed | 450: ask is $N below/above comp 580 — clears/fails the $15K trigger per CONTEXT]
 Rationale: (one line)
 Next step: [archive | request more photos | request build sheet | confirm CPO via MBUSA | schedule PPI | build negotiation brief]
 ```
@@ -138,7 +143,7 @@ guess.
 - "Here's the Carfax" → `references/carfax-reading.md`.
 - "What's a fair offer?" / "Build the negotiation case" → Stage 4 + `references/negotiation-framework.md`.
 - "What dealer is this?" / "Should I drive that far?" → `references/dealer-tier-list.md`.
-- "What about a 580 instead of a 450?" → CONTEXT economic-frame section + TCO note on the verdict block.
+- "What about a 450 instead of a 580?" → CONTEXT economic-frame section + Trim preference note on the verdict block; check the $15K-below-comp-580 trigger.
 
 ## Anti-patterns to avoid
 

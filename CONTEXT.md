@@ -30,8 +30,10 @@ see WORKSPACE.md.
   (`R` = 2024, `S` = 2025, `T` = 2026, and forward per FMVSS 565).
   Pre-2024 X167 cars (MY2020–2023) are out of scope.
 - **Model:** Mercedes-Benz GLS
-- **Trim:** GLS 450 (3.0L I6 turbo + mild hybrid, ~375 hp) **OR**
-  GLS 580 (4.0L V8 biturbo + EQ Boost, ~510 hp)
+- **Trim:** **GLS 580 (4.0L V8 biturbo + EQ Boost, ~510 hp)** is the
+  preferred default. GLS 450 (3.0L I6 turbo + mild hybrid, ~375 hp)
+  is the alternative only when its ask is **≥ $15K below the
+  comparable 580** — see Economic frame below.
 - **Seating:** Either **7-seat (2nd-row bench)** or **6-seat (2nd-row
   captain's chairs)** passes the gate. **7-seat bench is the
   tiebreaker at equal ask.** Dealer listing data is unreliable on
@@ -42,10 +44,22 @@ see WORKSPACE.md.
 
 ### Economic frame
 
-- 5-year TCO delta favors the **450 over the 580 by ~$25K** (fuel,
-  insurance, tires, depreciation). The 580 must clear a **materially
-  lower price bar** to compete on TCO. Document the delta on every
-  580 candidate explicitly.
+- **Katie strongly prefers the 580.** The V8 + standard upgraded
+  suspension (AMG Line + Air Body Control on the 580 vs base
+  AIRMATIC on the 450) make a meaningful day-to-day quality-of-
+  life difference for her use case. **Treat 580 as the default
+  Action candidate** when all other CONTEXT criteria pass.
+- **The 450 is considered only on a striking deal.** Specifically:
+  the candidate 450's ask must be **≥ $15K below the comparable
+  580 ask** (similar mileage, trim, options, CPO status) to compete
+  with the preference for the V8 platform. 450 candidates that
+  don't clear the $15K trigger are Pass by default — not because
+  they fail any other CONTEXT criterion, but because the 580 wins
+  on Katie's QoL frame at any price gap below the trigger.
+- 5-year TCO delta (fuel, insurance, tires, depreciation) favors
+  the 450 by roughly $25K. The $15K acquisition discount + ~$25K
+  TCO savings together meaningfully outweigh the QoL upgrade — at
+  smaller gaps, they don't.
 - Target **Mercedes-Benz Certified Pre-Owned (CPO)** where possible.
   Any 2024 or newer GLS sits well inside the CPO window (≤ 6 model
   years / ≤ 75K mi per `references/mbusa-cpo-criteria.md`). CPO
@@ -57,8 +71,8 @@ see WORKSPACE.md.
 
 | Field | Value |
 |:--|:--|
-| Price ceiling — 450 | **$80,000** |
-| Price ceiling — 580 | **$95,000** (strict — preserves TCO logic) |
+| Price ceiling — 580 (preferred default) | **$95,000 target (soft)**; effective ~**$105,000 cap** when pricing/options/CPO are clearly exceptional. Preserves financial discipline without forcing a hard wall. |
+| Price ceiling — 450 (alternative only) | **$80,000** hard cap, AND the candidate must clear the **≥ $15K below comp 580** trigger (per Economic frame above). Otherwise Pass. |
 | Mileage ceiling | 40,000 |
 | Search radius | **~250 mi drive-able** from Vienna, VA 22182 (Tier A/B). 250–500 mi is Tier C — escalation only when pricing/options are clearly exceptional. |
 | Title | Clean only — branded / salvage / lemon = auto Pass |
@@ -91,9 +105,14 @@ median comp at the same ask").
 Track these against the same scoring rubric so the skill is calibrated
 on real cars from day one.
 
-- **GLS 450 — Fredericksburg, VA dealer** — blue. TCO-favored option.
-- **GLS 580 — Midlothian, VA dealer** — blue. Must clear lower price
-  bar to beat the 450 on 5-yr TCO.
+- **GLS 450 — Fredericksburg, VA dealer** (VIN `4JGFF5KE0SB######`).
+  **Pass per end-to-end calibration test** — three CONTEXT failures
+  (off-spec Obsidian Black Metallic color, Premium trim not Pinnacle,
+  Burmester claim contradicted by listing speaker count). Kept here
+  as the calibration anchor; not a live pursuit.
+- **GLS 580 — Midlothian, VA dealer** — preferred default trim per
+  Economic frame above. To be evaluated in full once URL / VIN /
+  data are surfaced.
 
 `[Add VIN, mileage, ask, package list, CPO status as known.]`
 
