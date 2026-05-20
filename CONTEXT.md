@@ -74,7 +74,7 @@ see WORKSPACE.md.
 | Price ceiling — 580 (preferred default) | **$95,000 target (soft)**; effective ~**$105,000 cap** when pricing/options/CPO are clearly exceptional. Preserves financial discipline without forcing a hard wall. |
 | Price ceiling — 450 (alternative only) | **$80,000** hard cap, AND the candidate must clear the **≥ $15K below comp 580** trigger (per Economic frame above). Otherwise Pass. |
 | Mileage ceiling | 40,000 |
-| Search radius | **~250 mi drive-able from Vienna, VA 22182 — hard cap.** Tier A (≤60 mi), Tier B (60–150 mi), and Tier C (150–250 mi, escalation only) per `references/dealer-tier-list.md`. **>250 mi: auto-Pass** regardless of price/options — not worth the flight or week-long transport for inventory that turns up closer to home with regularity. |
+| Search radius | **~250 mi drive-able from Vienna, VA 22180 (612 Center St) — hard cap.** Tier A (≤60 mi), Tier B (60–150 mi), and Tier C (150–250 mi, escalation only) per `references/dealer-tier-list.md`. **>250 mi: auto-Pass** regardless of price/options — not worth the flight or week-long transport for inventory that turns up closer to home with regularity. |
 | Title | Clean only — branded / salvage / lemon = auto Pass |
 | Accident history | No structural or airbag-deployment events |
 | Owner count | Single or low; flag fleet/rental history |

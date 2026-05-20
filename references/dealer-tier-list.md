@@ -1,7 +1,9 @@
-# Dealer Tier List — MB Franchise Dealers within ~250 mi of 22182
+# Dealer Tier List — MB Franchise Dealers within ~250 mi of 22180
 
 Vetted franchise Mercedes-Benz dealers ranked by drive distance from
-Vienna, VA 22182. Used by the scoring rubric in `SKILL.md`.
+Vienna, VA 22180 (612 Center St). Used by the scoring rubric in
+`SKILL.md`. Distance estimates below shift by <2 mi relative to the
+prior 22182 reference; the tier assignments don't move.
 
 ## How the tiers map to scoring
 
