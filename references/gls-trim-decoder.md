@@ -23,7 +23,7 @@ sometimes cited as W167 in older documentation):
 | 6–7 | `5K` (450) or `8F` (580) | Engine + drivetrain variant — see Engine table below | High for 450, Medium for 580 |
 | 8 | varies | Restraint / market / drive code (encodes 4MATIC + US-market airbag config). MB does not publish the byte legend. | Medium |
 | 9 | calculated | Check digit (validates the other 16 per FMVSS 565). Not informational. | High |
-| 10 | `S` | Model year 2024. (`R` = 2023, `T` = 2025; year letters skip I, O, Q, U, Z, 0 on a 30-year cycle.) | High |
+| 10 | `R` | Model year 2024. Per FMVSS 565 the 30-year cycle skips I, O, Q, U, Z, 0. Adjacent codes: `P` = 2023, `R` = 2024, `S` = 2025, `T` = 2026. | High |
 | 11 | `B` | Plant code: Tuscaloosa. (Older Mercedes US SUV production used `A`; current MY23+ GLS lines show `B`.) | Medium-High |
 | 12–17 | numeric | Sequential production number | High |
 
@@ -157,12 +157,17 @@ Decode:
   hybrid, ~375 hp ✓
 - `E` → 4MATIC + US-market restraint config
 - `0` → check digit (validates the VIN)
-- `S` → **2024 model year** ✓
+- `S` → **2025 model year** (NOT 2024 — earlier published version of
+  this file incorrectly mapped `S` to 2024; per FMVSS 565 the
+  correct mapping is `R` = 2024, `S` = 2025, `T` = 2026)
 - `B` → **Tuscaloosa** plant ✓
 - `######` → production sequence
 
-**Result:** confirmed 2024 GLS 450 4MATIC, US-built, US-market. Year,
-engine, and plant all clear CONTEXT.md non-negotiables.
+**Result:** confirmed 2025 GLS 450 4MATIC, US-built, US-market.
+Engine and plant clear CONTEXT.md non-negotiables. **Year does
+NOT** clear the original CONTEXT spec ("Model year: 2024") and
+required a CONTEXT scope decision — see the year-scope widening
+commit and CONTEXT.md.
 
 **Still required from the data card** before this candidate can be
 scored past Stage 2:
