@@ -5,9 +5,9 @@ Single source of truth. Cowork reads this before every task. Edit the
 
 ## Mission
 
-Monitor franchise-dealer inventory for a used **2024 Mercedes-Benz GLS**.
-Surface actionable listings as they come online. Score every candidate
-**Action / Watch / Pass** with a one-line rationale.
+Monitor franchise-dealer inventory for a used **Mercedes-Benz GLS, model
+year 2024 or newer**. Surface actionable listings as they come online.
+Score every candidate **Action / Watch / Pass** with a one-line rationale.
 
 This is a **market-monitor against a tight spec**, not a scam filter.
 The forked skill's curbstoner / Marketplace logic is being gutted —
@@ -26,7 +26,9 @@ see WORKSPACE.md.
 
 ### Non-negotiable
 
-- **Model year:** 2024
+- **Model year:** **2024 or newer.** Verified via VIN position 10
+  (`R` = 2024, `S` = 2025, `T` = 2026, and forward per FMVSS 565).
+  Pre-2024 X167 cars (MY2020–2023) are out of scope.
 - **Model:** Mercedes-Benz GLS
 - **Trim:** GLS 450 (3.0L I6 turbo + mild hybrid, ~375 hp) **OR**
   GLS 580 (4.0L V8 biturbo + EQ Boost, ~510 hp)
@@ -45,10 +47,11 @@ see WORKSPACE.md.
   lower price bar** to compete on TCO. Document the delta on every
   580 candidate explicitly.
 - Target **Mercedes-Benz Certified Pre-Owned (CPO)** where possible.
-  A 2024 sits well inside the CPO window. CPO extends comprehensive
-  warranty and signals dealer-vetted condition — on non-CPO
-  candidates, quantify the foregone warranty value as a negotiation
-  lever.
+  Any 2024 or newer GLS sits well inside the CPO window (≤ 6 model
+  years / ≤ 75K mi per `references/mbusa-cpo-criteria.md`). CPO
+  extends comprehensive warranty and signals dealer-vetted condition
+  — on non-CPO candidates, quantify the foregone warranty value as
+  a negotiation lever.
 
 ### Thresholds
 
@@ -64,7 +67,9 @@ see WORKSPACE.md.
 
 ### Packages
 
-2024 GLS option groups that matter for this build.
+GLS option groups that matter for this build (the package set is
+stable across MY2024 and MY2025; verify per-candidate against the
+window sticker / data card).
 
 - **Pinnacle trim** (vs. Premium / Exclusive) — **Must-have**
 - **Executive Rear Seat Package** — heated/ventilated/reclining rear
@@ -123,4 +128,4 @@ For each listing the skill should:
 - Facebook Marketplace, Craigslist, private-party dynamics.
 - Curbstoner / wire-fraud detection (franchise dealers).
 - Sub-$15K reliability heuristics from the original skill.
-- Any vehicle that is not a 2024 GLS.
+- Any vehicle that is not a Mercedes-Benz GLS, model year 2024 or newer.

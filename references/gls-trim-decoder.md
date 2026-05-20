@@ -1,8 +1,9 @@
-# 2024 GLS — VIN decoder and data-card workflow
+# 2024+ GLS — VIN decoder and data-card workflow
 
-Most of what you need to score a 2024 GLS candidate (trim level,
-packages, color, seating config) is **not** in the VIN. The VIN tells
-you year, engine variant, plant, and production sequence — full stop.
+Most of what you need to score a 2024-or-newer GLS candidate (trim
+level, packages, color, seating config) is **not** in the VIN. The
+VIN tells you year, engine variant, plant, and production sequence
+— full stop.
 Everything else lives on the **data card** (also called the Vehicle
 Master Inquiry, VMI, or "VeDoc print") that the dealer can pull from
 Mercedes' XENTRY system in 30 seconds.
@@ -44,7 +45,7 @@ CONTEXT — 5-year TCO delta is ~$25K favoring the 450.
 | `8H` | Maybach GLS 600 4MATIC | Out of scope per CONTEXT.md | — |
 | `8K` | AMG GLS 63 4MATIC+ | Out of scope per CONTEXT.md | — |
 
-If positions 6–7 are anything else on a "2024 GLS" listing, the
+If positions 6–7 are anything else on a "2024+ GLS" listing, the
 listing is mislabeled or the VIN is wrong — escalate before scoring.
 
 ## What the VIN does NOT tell you
@@ -130,7 +131,9 @@ calibration event for the entire reference.
 
 Run these on every alert before doing real work:
 
-- **VIN position 10 ≠ `S`** → not a 2024 → auto-Pass per CONTEXT.
+- **VIN position 10 ∉ {`R`, `S`, `T`, `V`, `W`, `X`, `Y`}** → MY
+  before 2024 → auto-Pass per CONTEXT (year scope is 2024 or newer
+  per FMVSS 565 codes; letters skip I, O, Q, U, Z, 0).
 - **VIN positions 6–7 ≠ `5K` and ≠ `8F`** → not a US-spec 450 or 580
   → escalate before scoring.
 - **VIN positions 6–7 say `8F` but the listing says "GLS 450"** (or
