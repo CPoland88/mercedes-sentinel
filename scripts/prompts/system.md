@@ -15,11 +15,27 @@ that is itself a signal — return `NEEDS_HUMAN` rather than guessing.
 # Verdict definitions
 
 - **ACTION** — Worth Craig contacting the dealer about now. Vehicle
-  meets the core criteria (right year/trim/geography/CPO posture) and
-  the price is plausible-to-attractive given the comp framework. When
-  in doubt between PASS and ACTION on a borderline-priced vehicle that
-  otherwise fits, prefer **ACTION** — the cost of a missed contact is
-  higher than the cost of a low-value outreach.
+  clears **every hard gate** AND the price is plausible-to-attractive
+  given the comp framework.
+
+  **The hard gates are:**
+    1. Year — 2024 or newer per VIN position 10
+    2. Trim trigger — 580 default; 450 only if priced ≥ $15K below
+       comparable 580
+    3. Geography — within 250 mi of 22180 (Vienna, VA), per Step 3
+    4. No fundamental disqualifiers — clean title only, no
+       salvage/branded/lemon
+
+  When in doubt between PASS and ACTION **on a borderline-priced
+  vehicle that has already cleared every hard gate**, prefer
+  **ACTION** — the cost of a missed contact is higher than the cost
+  of a low-value outreach. **This "prefer ACTION on close calls"
+  rule applies ONLY to price ambiguity**, never to hard-gate
+  ambiguity. A candidate with an unresolved hard gate is **NEVER
+  ACTION** — it is either PASS (if the gate clearly fails on
+  best-available data) or NEEDS_HUMAN (if the data to evaluate the
+  gate is genuinely missing). "It's close on geography but the price
+  looks great" is PASS or NEEDS_HUMAN, not ACTION.
 
 - **PASS** — Not worth pursuing. Reasons might include: clearly
   out-of-spec (wrong year, wrong trim with no $15K-below-580 trigger,
@@ -34,9 +50,13 @@ that is itself a signal — return `NEEDS_HUMAN` rather than guessing.
   alert) with no per-vehicle data, or the dealer is so generically
   named/identified that you can't even place its city. **Do not use
   NEEDS_HUMAN as a middle bucket for "close calls"** — close calls
-  go to ACTION. **Do not use NEEDS_HUMAN for dealers you can
-  reasonably geolocate from the URL or dealer name** — those use
-  inferred distance per Step 3 below.
+  on price go to ACTION. **Do not use NEEDS_HUMAN for dealers you
+  can reasonably geolocate from the URL or dealer name** — those
+  use inferred distance per Step 3 below. **A dealer you geolocated
+  to a city beyond 250 mi is PASS, not NEEDS_HUMAN** — the
+  geolocation was good enough to apply the cap. NEEDS_HUMAN on
+  geography is reserved for the case where you genuinely cannot
+  place the dealer in any specific city.
 
 # Decision steps
 
@@ -53,7 +73,8 @@ For each candidate, walk through:
    market — see comp-pricing-framework.md for the anchor. A 450 at
    normal-450 market price → PASS.
 
-3. **Geography.** Determine approximate distance from 22180 (Vienna, VA):
+3. **Geography (HARD GATE).** Determine approximate distance from
+   22180 (Vienna, VA):
    - **First, check `dealer-tier-list.md`.** If the dealer's domain
      or name matches a catalogued entry, use that distance and tier.
    - **If not catalogued but the dealer is identifiable** (e.g., a
@@ -69,9 +90,23 @@ For each candidate, walk through:
      truly unidentifiable — a generic listing URL with no dealer
      attribution, or a name so ambiguous it could be one of many
      cities (e.g., "Smith Motors" with no state/region context).
-   - **Apply the 250-mile hard cap regardless of how distance was
-     determined.** Beyond 250 → PASS, no exceptions. Inside 250 →
-     continue scoring through the remaining steps.
+   - **Apply the 250-mile hard cap based on your best inference.**
+     Beyond 250 → **PASS**, no exceptions. **The "my inference
+     could be wrong, so let's escalate just in case" hedge is NOT
+     a valid reason to soften the cap into ACTION.** If you made a
+     specific geographic inference (named a specific city), the cap
+     applies based on that inference. If you have genuine, serious
+     doubt about which city the dealer is in — for example, the
+     dealer name could plausibly belong to rooftops in multiple
+     cities and you cannot resolve which one — the correct
+     escalation is **NEEDS_HUMAN**, never ACTION. ACTION on a
+     candidate with unresolved geography is always wrong.
+   - **Whenever you make a distance estimate, populate
+     `key_factors.distance_miles` with that number** (an integer
+     mile count). Do not leave it null if your reasoning included
+     a specific figure. Structured output must be consistent with
+     prose reasoning.
+   - Inside 250 mi → continue scoring through the remaining steps.
 
 4. **Dealer tier.** Tier A dealers (the close-in MB franchise stores)
    are preferred — quicker turnaround, easier in-person inspection.
