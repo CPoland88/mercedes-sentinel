@@ -62,11 +62,12 @@ is the price a reasonable dealer should expect.
   point estimate $3,000
 - **Days-on-lot discount** for aged inventory: 1.5–3% off IMV at
   30–45 days, additional 2–4% at 60–75 days, deeper at 100+ days
-- **580 → 450 TCO adjustment** (580 candidates only): per CONTEXT
-  the 580 must clear a $25K lower bar than comp 450s on 5-yr TCO.
-  If the candidate 580 is priced at typical-580 market, the offer
-  needs to reflect the TCO gap — either the 580 ask drops or it's
-  a Pass.
+- **450 trigger check** (450 candidates only): per CONTEXT, Katie
+  prefers the 580; a 450 only competes if its ask is **≥ $15K
+  below the comparable 580**. Before running any subtraction math
+  on a 450 candidate, confirm the trigger is cleared. A 450 that
+  fails the trigger is a Pass regardless of how clean it is — the
+  580 wins on Katie's QoL frame at any smaller gap.
 - **Negotiation cushion**: $500–$1,500 for the dealer to feel they
   got somewhere
 
@@ -290,12 +291,20 @@ Two postures based on PPI / photo / Carfax / VeDoc outcome:
 - One counter, then walk
 - Run parallel candidates so walking has no opportunity cost
 
-**For 580 candidates specifically:** open offer must reflect the
-TCO gap from CONTEXT. If a 580 is priced at typical-580 market
-($88–98K), the candidate is a Watch or Pass by default. Action on
-a 580 requires the ask already clearing a meaningful price
-advantage over comp 580s — usually $5–$10K under typical to start
-to close the TCO gap.
+**For 580 candidates specifically:** 580 is the preferred default
+trim per CONTEXT (Katie's QoL preference for V8 + Air Body Control).
+A 580 priced at typical market ($88–98K, with effective ~$105K cap
+for clearly exceptional candidates) is an Action candidate by
+default when all other CONTEXT criteria pass. No special TCO-anchor
+discipline required — just the standard math.
+
+**For 450 candidates specifically:** verify the **≥ $15K below comp
+580 trigger** before any subtraction math. A 450 ask must be at
+least $15K below the comparable 580 in the local market to even
+enter consideration; a 450 ask that falls inside that gap is a Pass
+because the 580 wins on QoL at that price point. Once the trigger
+is cleared, run the standard subtraction math; the 450 also has the
+$80K hard ceiling on top of the trigger.
 
 ## 11. When the dealer won't move
 
@@ -405,8 +414,10 @@ match what you agreed by email.
 
 ## Cross-references
 
-- `CONTEXT.md` — price ceilings ($80K 450 / $95K 580), seating
-  policy, geography, the 580→450 TCO frame.
+- `CONTEXT.md` — price ceilings ($95K soft / ~$105K cap on 580
+  preferred default; $80K hard cap on 450 + $15K-below-comp-580
+  trigger), seating policy, geography, the 580-default trim frame
+  with Katie's QoL preference.
 - `references/comp-pricing-framework.md` — IMV methodology,
   options-delta math, days-on-lot signal interpretation, KBB CPO
   tier as primary cross-check.

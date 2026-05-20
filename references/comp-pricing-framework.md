@@ -209,10 +209,8 @@ dollars.
 
 **MBUX Rear Tablet** is **not a stand-alone option** on the 2024
 GLS — Mercedes consolidated it into Executive Rear Seat Plus (which
-is 6-seat only). CONTEXT lists it as a separate "Indifferent"
-package; the listing-as-separate is technically wrong but doesn't
-affect scoring since it's Indifferent. Note for any future CONTEXT
-cleanup pass.
+is 6-seat only). (CONTEXT now annotates this directly on the
+Executive Rear Seat Package line.)
 
 ### Residual decay rule
 
@@ -308,10 +306,15 @@ CPO adjustment (if non-CPO):
   Foregone-CPO subtraction:  $[N]
   Apples-to-apples adjusted ask:  $[ask - subtraction]
 
+Trim preference (per CONTEXT economic frame):
+  - If THIS is a 580 candidate: preferred default; no trigger check.
+  - If THIS is a 450 candidate: verify ask ≥ $15K below comparable
+    580 in the local market. Pass if trigger fails (the 580 wins
+    on Katie's QoL frame at any smaller gap).
+
 Color note:  CONTEXT-acceptable colors are Emerald Green Metallic
-and Twilight Blue Metallic. User has reported this candidate is
-off-spec on color. Confirm exact paint code from window sticker
-and flag the deviation on the verdict block.
+and Twilight Blue Metallic. Confirm exact paint code from window
+sticker and flag any deviation on the verdict block.
 ```
 
 **Next step after pulling the listing and the window sticker:**
