@@ -8,6 +8,6 @@ python-dotenv>=1.0,<2.0
 # (no text/plain alternative).
 beautifulsoup4>=4.12,<5.0
 
-# Reserved for C2 — Claude API client. Pinned to the major series we
-# tested against.
-# anthropic>=0.40,<1.0
+# Claude API client (C2: autonomous triage). Pinned to the major
+# series we tested against; bump conservatively as new versions land.
+anthropic>=0.40,<1.0

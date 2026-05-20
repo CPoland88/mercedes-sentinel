@@ -1,0 +1,71 @@
+{
+  "name": "submit_triage_verdict",
+  "description": "Submit the structured triage verdict for a single Mercedes GLS candidate. Use this tool to return your decision. Do not produce a prose response in addition.",
+  "input_schema": {
+    "type": "object",
+    "required": ["verdict", "reasoning", "key_factors"],
+    "properties": {
+      "verdict": {
+        "type": "string",
+        "enum": ["ACTION", "PASS", "NEEDS_HUMAN"],
+        "description": "ACTION = worth contacting the dealer now. PASS = not worth pursuing. NEEDS_HUMAN = ambiguous or missing data, escalate to manual review."
+      },
+      "reasoning": {
+        "type": "string",
+        "description": "2-4 sentences explaining the verdict. Lead with the decisive factor (e.g., 'PASS — 450 trim without the $15K-below-580 trigger met')."
+      },
+      "key_factors": {
+        "type": "object",
+        "description": "Structured breakdown of the factors that drove the verdict. Use null for fields the email did not contain.",
+        "required": ["trim", "model_year", "price", "distance_miles", "dealer_tier", "cpo_status", "price_assessment"],
+        "properties": {
+          "trim": {
+            "type": ["string", "null"],
+            "enum": ["580", "450", "unknown", null],
+            "description": "GLS trim from VIN decode."
+          },
+          "model_year": {
+            "type": ["integer", "null"],
+            "description": "Model year from VIN position 10."
+          },
+          "price": {
+            "type": ["integer", "null"],
+            "description": "Listing price in USD, integer. Null if not extracted."
+          },
+          "mileage": {
+            "type": ["integer", "null"],
+            "description": "Odometer reading. Null if not in the email."
+          },
+          "distance_miles": {
+            "type": ["integer", "null"],
+            "description": "Approximate distance from 22180 (Vienna, VA). Null if dealer location can't be inferred from the listing URL."
+          },
+          "dealer_tier": {
+            "type": ["string", "null"],
+            "enum": ["A", "B", "C", "unknown", null],
+            "description": "Dealer tier from dealer-tier-list.md."
+          },
+          "cpo_status": {
+            "type": ["string", "null"],
+            "enum": ["cpo", "cpo_eligible", "not_cpo", "unknown", null],
+            "description": "Mercedes-Benz CPO status."
+          },
+          "price_assessment": {
+            "type": ["string", "null"],
+            "enum": ["below_market", "at_market", "above_market", "unknown", null],
+            "description": "Pricing vs comps per comp-pricing-framework.md."
+          },
+          "deal_score_summary": {
+            "type": ["string", "null"],
+            "description": "One-sentence summary of the value calculation (e.g., '$2K under nearest 580 comp, CPO, Tier A')."
+          }
+        }
+      },
+      "action_items": {
+        "type": "array",
+        "description": "Required when verdict is ACTION. 2-4 concrete next steps specific to this listing. Empty array for PASS / NEEDS_HUMAN.",
+        "items": {"type": "string"}
+      }
+    }
+  }
+}
