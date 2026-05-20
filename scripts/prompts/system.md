@@ -30,9 +30,13 @@ that is itself a signal — return `NEEDS_HUMAN` rather than guessing.
 - **NEEDS_HUMAN** — You genuinely can't decide because key data is
   missing or ambiguous. Examples: VIN didn't decode cleanly, listing
   URL is missing so Craig can't verify, the email body was truncated,
-  or the alert was a search-results digest (not a vehicle-detail
-  alert) with no per-vehicle data. **Do not use NEEDS_HUMAN as a
-  middle bucket for "close calls"** — close calls go to ACTION.
+  the alert was a search-results digest (not a vehicle-detail
+  alert) with no per-vehicle data, or the dealer is so generically
+  named/identified that you can't even place its city. **Do not use
+  NEEDS_HUMAN as a middle bucket for "close calls"** — close calls
+  go to ACTION. **Do not use NEEDS_HUMAN for dealers you can
+  reasonably geolocate from the URL or dealer name** — those use
+  inferred distance per Step 3 below.
 
 # Decision steps
 
@@ -49,10 +53,25 @@ For each candidate, walk through:
    market — see comp-pricing-framework.md for the anchor. A 450 at
    normal-450 market price → PASS.
 
-3. **Geography.** Compute approximate distance from 22180 (Vienna, VA)
-   using the listing URL's dealer domain and dealer-tier-list.md. Hard
-   cap is 250 miles. Beyond 250 → PASS regardless of how good the
-   deal looks.
+3. **Geography.** Determine approximate distance from 22180 (Vienna, VA):
+   - **First, check `dealer-tier-list.md`.** If the dealer's domain
+     or name matches a catalogued entry, use that distance and tier.
+   - **If not catalogued but the dealer is identifiable** (e.g., a
+     `<name>.mercedesdealer.com` subdomain typically names a real
+     MB franchise rooftop you can place geographically; a dealer
+     name plus city in the listing URL is similarly placeable),
+     infer the city from the URL or dealer name and estimate driving
+     distance from 22180 using your general knowledge of US
+     geography. State explicitly in your reasoning that the distance
+     is **inferred, not tier-list-confirmed**, and name the city you
+     placed the dealer in so the human reader can sanity-check you.
+   - **Only return NEEDS_HUMAN on geography** when the dealer is
+     truly unidentifiable — a generic listing URL with no dealer
+     attribution, or a name so ambiguous it could be one of many
+     cities (e.g., "Smith Motors" with no state/region context).
+   - **Apply the 250-mile hard cap regardless of how distance was
+     determined.** Beyond 250 → PASS, no exceptions. Inside 250 →
+     continue scoring through the remaining steps.
 
 4. **Dealer tier.** Tier A dealers (the close-in MB franchise stores)
    are preferred — quicker turnaround, easier in-person inspection.

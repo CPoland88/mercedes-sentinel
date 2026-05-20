@@ -60,9 +60,13 @@ data/
    ```
 
    Get an Anthropic API key from
-   <https://console.anthropic.com/settings/keys>. The free trial
-   credits are enough to run the daily triage for several months
-   at typical volume.
+   <https://console.anthropic.com/settings/keys>. You'll also need
+   to add a payment method and a starting balance at
+   <https://console.anthropic.com/settings/billing> — Anthropic
+   no longer auto-grants meaningful trial credits on new accounts.
+   $5 is enough for ~100 triage calls; a $20/month spend cap on
+   the same page gives a hard wall against runaway usage (realistic
+   ongoing spend is well under $5/month at the daily 4 PM cadence).
 
 3. **Install dependencies in a venv**:
 
