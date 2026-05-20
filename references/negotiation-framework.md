@@ -204,7 +204,7 @@ contract.
 
 | Line item | VA / NoVA reality | Negotiable? |
 |:--|:--|:--|
-| **Doc / processing fee** | **$799–$999 typical in NoVA; no statutory cap.** Among the highest in the US. | Yes in practice; dealers resist but will eat $200–400 on a big deal. Ask explicitly. |
+| **Doc / processing fee** | **$799–$999 typical in NoVA; no statutory cap.** Among the highest in the US. *Calibration: Mercedes-Benz of Fredericksburg confirmed at $999 — top of the range.* | Yes in practice; dealers resist but will eat $200–400 on a big deal. Ask explicitly. |
 | **VA Sales and Use Tax (SUT)** | **4.15% of gross sales price, $75 minimum.** | Not negotiable. |
 | **Trade-in tax credit** | Ambiguous in VA — language is unclear and dealer practice varies. **Confirm in writing on the OTD quote** before relying on it for math. | N/A but verify treatment. |
 | **VA title fee** | ~$15 | Not negotiable. |

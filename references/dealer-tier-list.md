@@ -45,7 +45,11 @@ MBUSA locator before relying on it in scoring.
 - **Mercedes-Benz of Catonsville** (Catonsville, MD) — ~50 mi
   (Baltimore SW suburb).
 - **Mercedes-Benz of Fredericksburg** (Fredericksburg, VA) — ~55 mi.
-  **Current 450 candidate per CONTEXT.md.**
+  Parent group: **Huber Motor Cars** (info@hubermotorcars.com;
+  selling brand is "Huber Price"). Confirmed doc fee: $999 (top of
+  NoVA range). Current 450 candidate VIN `4JGFF5KE0SB######` is a
+  2025 MY in Premium trim, Obsidian Black Metallic — Pass per
+  CONTEXT spec; see end-to-end calibration test for full verdict.
 
 ## Tier B — Day trip (60 to 150 mi)
 
@@ -87,8 +91,10 @@ applies across every rooftop.
 
 Common groups serving the 250-mi region include Penske Automotive,
 EuroMotorcars (Holman), AutoNation, Lithia/Driveway, Group 1, Sonic,
-Hendrick, Asbury, and Charles Barker. Tag each rooftop above with its
-parent group as you verify it.
+Hendrick, Asbury, Charles Barker, and **Huber Motor Cars**
+(confirmed Fredericksburg, may operate other regional rooftops —
+verify as encountered). Tag each rooftop above with its parent
+group as you verify it.
 
 ## Notes on use
 
