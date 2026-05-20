@@ -10,39 +10,63 @@ at a JPEG. Each claim below carries a confidence rating; anything
 
 ---
 
-## Photo-fetching workflow — pull and view, don't just defer
+## Photo-fetching workflow — surface URLs, view via user paste-back
 
 When a listing has an internal conflict (e.g., feature list claims
 both "6-seat captains" and "7-seat configuration") or any question
-is **photo-resolvable**, the skill should **pull the relevant photo
-via `web_fetch` and view it directly** rather than defer to "demand
-from dealer" or rely on the user's manual inspection.
+is **photo-resolvable**, the skill should **identify the specific
+diagnostic image URLs and surface them to the user for paste-back**,
+rather than defer with a generic "request more photos from the
+dealer."
+
+**Why paste-back instead of direct fetch:** Cowork's `web_fetch`
+provenance system only accepts URLs that originated in a user
+message (or a prior `web_fetch` result the system trusts). CDN paths
+the skill discovers inside a dealer-page fetch (e.g., `vehicle-
+images.carscommerce.inc/...`) are **not** auto-added to the
+provenance set, so direct `web_fetch` or `bash curl` against them
+both return 403. The same restriction blocks the Linux sandbox's
+network egress. Empirically verified during the White Plains
+calibration round.
 
 Mechanics:
 
-1. **Identify diagnostic photo(s).** Most resolutions only need one
-   or two specific shots (e.g., a 2nd-row interior view for seating;
-   a B-pillar sticker close-up for paint code).
-2. **Fetch the image URL.** Dealer-page fetches return image URLs
-   in the markdown content; CDN paths (e.g.,
-   `vehicle-images.carscommerce.inc/...`) are then valid for
-   subsequent `web_fetch` calls because they appeared in the prior
-   fetch result.
-3. **View the image.** The skill is multimodal; viewing the
-   downloaded image directly resolves the conflict without a
-   round-trip to the dealer.
+1. **Identify diagnostic photo(s).** Most resolutions only need
+   one or two specific shots (e.g., a 2nd-row interior view for
+   seating; a B-pillar sticker close-up for paint code; a wheel
+   face for curb-rash check).
+2. **Surface the image URLs to the user** as a short copy-paste
+   block — typically the lead image plus the 2–3 diagnostic
+   close-ups, with a one-line explanation of what each resolves.
+3. **User pastes the URLs back into chat.** Pasting them in a user
+   message adds them to the provenance set; subsequent `web_fetch`
+   calls then succeed and the skill views the images directly via
+   its vision capability.
 4. **Only escalate to "demand from dealer"** when the diagnostic
-   photo isn't in the listing AND can't be inferred from the
-   available set.
+   photo genuinely isn't in the listing set and can't be inferred
+   from the available frames.
 
 When NOT to use this workflow:
-- For build-sheet-only items (Pinnacle trim, Driver Assistance
-  Package, Acoustic Comfort) — pull the Monroney instead.
-- For CPO verification — call 1-800-FOR-MERCEDES (no photo
-  evidence is authoritative).
+- **Build-sheet-only items** (Pinnacle trim, Driver Assistance
+  Package, Acoustic Comfort) — pull the Monroney instead. No photo
+  evidence is dispositive for these.
+- **CPO verification** — call 1-800-FOR-MERCEDES.
 
-This adds two minutes to triage and eliminates whole categories of
-"unverified" downgrades in the verdict block.
+Alternative paths considered and currently rejected:
+
+- **Claude in Chrome** (`claude.com/claude-for-chrome`) would let
+  the skill drive a Chrome browser to navigate dealer pages and
+  screenshot images. The catch: Chrome must be **running in the
+  background** for the extension to function. Adds a persistent
+  process tax for what's currently a paste-back workflow. Revisit
+  if (a) MBUSA window-sticker pulls require interactive workflow,
+  or (b) bulk triage of 10+ candidates per session becomes routine.
+- **Direct image upload** by the user (Save Image As → drag into
+  chat) — works but is more steps than URL paste-back.
+
+This adds maybe one extra exchange per candidate with a photo-
+resolvable question and eliminates whole categories of "unverified"
+downgrades in the verdict block.
 
 ---
 
