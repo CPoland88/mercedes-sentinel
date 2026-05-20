@@ -1,0 +1,127 @@
+# CONTEXT.md — Mercedes Inventory Sentinel
+
+Single source of truth. Cowork reads this before every task. Edit the
+`[CONFIRM]` fields once, then leave this file authoritative.
+
+## Mission
+
+Monitor franchise-dealer inventory for a used **2024 Mercedes-Benz GLS**.
+Surface actionable listings as they come online. Score every candidate
+**Action / Watch / Pass** with a one-line rationale.
+
+This is a **market-monitor against a tight spec**, not a scam filter.
+The forked skill's curbstoner / Marketplace logic is being gutted —
+see WORKSPACE.md.
+
+## The Driver (hard timeline)
+
+- Third child — **boy, due October 2026**.
+- Current fleet (**2022 Rivian R1T**, **2021 Porsche Macan S**) does
+  not seat a three-kid household.
+- Vehicle must be **in service before the due date**.
+- Working backward: serious buy window closes **late August 2026** to
+  allow PPI, financing, and out-of-state transport if the car is remote.
+
+## Vehicle Spec
+
+### Non-negotiable
+
+- **Model year:** 2024
+- **Model:** Mercedes-Benz GLS
+- **Trim:** GLS 450 (3.0L I6 turbo + mild hybrid, ~375 hp) **OR**
+  GLS 580 (4.0L V8 biturbo + EQ Boost, ~510 hp)
+- **Seating:** Either **7-seat (2nd-row bench)** or **6-seat (2nd-row
+  captain's chairs)** passes the gate. **7-seat bench is the
+  tiebreaker at equal ask.** Dealer listing data is unreliable on
+  this — verify from photos and VIN/build, never from the listing's
+  seating field alone.
+- **Exterior:** Blue. Acceptable factory colors: **Emerald Green
+  Metallic, Twilight Blue Metallic**.
+
+### Economic frame
+
+- 5-year TCO delta favors the **450 over the 580 by ~$25K** (fuel,
+  insurance, tires, depreciation). The 580 must clear a **materially
+  lower price bar** to compete on TCO. Document the delta on every
+  580 candidate explicitly.
+- Target **Mercedes-Benz Certified Pre-Owned (CPO)** where possible.
+  A 2024 sits well inside the CPO window. CPO extends comprehensive
+  warranty and signals dealer-vetted condition — on non-CPO
+  candidates, quantify the foregone warranty value as a negotiation
+  lever.
+
+### Thresholds
+
+| Field | Value |
+|:--|:--|
+| Price ceiling — 450 | **$80,000** |
+| Price ceiling — 580 | **$95,000** (strict — preserves TCO logic) |
+| Mileage ceiling | 40,000 |
+| Search radius | **~250 mi drive-able** from Vienna, VA 22182 (Tier A/B). 250–500 mi is Tier C — escalation only when pricing/options are clearly exceptional. |
+| Title | Clean only — branded / salvage / lemon = auto Pass |
+| Accident history | No structural or airbag-deployment events |
+| Owner count | Single or low; flag fleet/rental history |
+
+### Packages
+
+2024 GLS option groups that matter for this build.
+
+- **Pinnacle trim** (vs. Premium / Exclusive) — **Must-have**
+- **Executive Rear Seat Package** — heated/ventilated/reclining rear
+  captain's chairs, rear console — **Nice-to-have** (only applies to
+  the 6-seat variant)
+- **Driver Assistance Package** — **Nice-to-have**
+- **Acoustic Comfort Package** — **Must-have**
+- **Warmth & Comfort Package** — **Must-have**
+- **MBUX Rear Tablet / rear-seat entertainment** — Indifferent
+- **Burmester 3D surround** — Nice-to-have
+- **Air Balance / cabin fragrance** — Indifferent
+- **Trailer hitch** — Indifferent
+
+Quantify package deltas in **dollars vs. median comp** for negotiation
+prep (e.g. "this 450 carries ~$4,200 more factory options than the
+median comp at the same ask").
+
+## Live Candidates (as of project start)
+
+Track these against the same scoring rubric so the skill is calibrated
+on real cars from day one.
+
+- **GLS 450 — Fredericksburg, VA dealer** — blue. TCO-favored option.
+- **GLS 580 — Midlothian, VA dealer** — blue. Must clear lower price
+  bar to beat the 450 on 5-yr TCO.
+
+`[Add VIN, mileage, ask, package list, CPO status as known.]`
+
+## Sources (priority order)
+
+1. **Saved-search email alerts** — Cars.com, AutoTrader, CarGurus.
+   Primary ingestion path. No scraping.
+2. **MBUSA inventory locator / CPO search** — authoritative for CPO.
+3. **Reputable dealer groups, ~250-mi radius** — monitored directly.
+   See `references/dealer-tier-list.md`.
+
+Do **not** build a Facebook Marketplace or Playwright scraping layer.
+Out of scope.
+
+## Scoring Rubric (target behavior)
+
+For each listing the skill should:
+
+1. **VIN-decode** to verify actual build — never trust dealer-entered
+   options or seating fields.
+2. **Confirm seating config** (7-seat bench or 6-seat captain's
+   chairs) from photos + build. Neither found = Pass. 7-seat is the
+   tiebreaker at equal ask.
+3. **Comp the ask** against trailing ~90-day market (CarGurus IMV as
+   the clean free signal; note when an instrument is missing).
+4. **Flag CPO status** + remaining factory warranty math.
+5. **Score:** Action / Watch / Pass, one-line rationale.
+6. On **Action**: produce a defect/option-anchored negotiation brief.
+
+## Out of Scope
+
+- Facebook Marketplace, Craigslist, private-party dynamics.
+- Curbstoner / wire-fraud detection (franchise dealers).
+- Sub-$15K reliability heuristics from the original skill.
+- Any vehicle that is not a 2024 GLS.
