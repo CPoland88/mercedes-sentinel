@@ -36,38 +36,64 @@ class TestState(unittest.TestCase):
         self.assertEqual(state.load_seen_vins(), {})
         self.assertFalse(state.is_seen("4JGFF8FE2SB431338"))
 
-    def test_mark_seen_creates_record(self):
-        state.mark_seen("4JGFF8FE2SB431338", "cargurus", "https://example.com/inv/x")
+    def test_mark_seen_creates_record_with_per_provider_block(self):
+        state.mark_seen(
+            "4JGFF8FE2SB431338",
+            "cargurus",
+            "https://example.com/inv/x",
+            {"price": 95000, "mileage": 5000},
+        )
         self.assertTrue(state.is_seen("4JGFF8FE2SB431338"))
         seen = state.load_seen_vins()
-        self.assertEqual(seen["4JGFF8FE2SB431338"]["providers"], ["cargurus"])
+        record = seen["4JGFF8FE2SB431338"]
+        self.assertIn("first_seen", record)
+        self.assertIn("last_seen", record)
+        self.assertIn("cargurus", record["per_provider"])
         self.assertEqual(
-            seen["4JGFF8FE2SB431338"]["listing_urls"],
+            record["per_provider"]["cargurus"]["last_metadata"],
+            {"price": 95000, "mileage": 5000},
+        )
+        self.assertEqual(
+            record["per_provider"]["cargurus"]["listing_urls"],
             ["https://example.com/inv/x"],
         )
-        self.assertIn("first_seen", seen["4JGFF8FE2SB431338"])
-        self.assertIn("last_seen", seen["4JGFF8FE2SB431338"])
 
-    def test_mark_seen_is_idempotent_and_accumulates(self):
-        state.mark_seen("4JGFF8FE2SB431338", "cargurus", "https://a.example.com/x")
-        state.mark_seen("4JGFF8FE2SB431338", "cargurus", "https://a.example.com/x")
-        state.mark_seen("4JGFF8FE2SB431338", "autotrader", "https://b.example.com/x")
-        seen = state.load_seen_vins()
-        # Providers dedup
-        self.assertEqual(
-            sorted(seen["4JGFF8FE2SB431338"]["providers"]),
-            ["autotrader", "cargurus"],
-        )
-        # URLs dedup
-        self.assertEqual(
-            sorted(seen["4JGFF8FE2SB431338"]["listing_urls"]),
-            ["https://a.example.com/x", "https://b.example.com/x"],
-        )
+    def test_mark_seen_accumulates_across_providers(self):
+        state.mark_seen("VIN", "cargurus", "https://a.example.com/x", {"price": 90000})
+        state.mark_seen("VIN", "autotrader", "https://b.example.com/x", {"price": 90500})
+        record = state.load_seen_vins()["VIN"]
+        self.assertEqual(set(record["per_provider"].keys()), {"cargurus", "autotrader"})
+        self.assertEqual(record["per_provider"]["cargurus"]["last_metadata"]["price"], 90000)
+        self.assertEqual(record["per_provider"]["autotrader"]["last_metadata"]["price"], 90500)
+
+    def test_mark_seen_updates_metadata_on_repeat_call(self):
+        state.mark_seen("VIN", "cargurus", "https://a.example.com/x", {"price": 95000})
+        state.mark_seen("VIN", "cargurus", "https://a.example.com/x", {"price": 89000})
+        record = state.load_seen_vins()["VIN"]
+        # Metadata replaced (not merged) — last write wins
+        self.assertEqual(record["per_provider"]["cargurus"]["last_metadata"]["price"], 89000)
+        # URL deduped (still one entry)
+        self.assertEqual(len(record["per_provider"]["cargurus"]["listing_urls"]), 1)
+
+    def test_mark_seen_dedups_urls_within_provider(self):
+        state.mark_seen("VIN", "cargurus", "https://a.example.com/x", {})
+        state.mark_seen("VIN", "cargurus", "https://a.example.com/x", {})
+        state.mark_seen("VIN", "cargurus", "https://b.example.com/y", {})
+        urls = state.load_seen_vins()["VIN"]["per_provider"]["cargurus"]["listing_urls"]
+        self.assertEqual(sorted(urls), ["https://a.example.com/x", "https://b.example.com/y"])
 
     def test_mark_seen_handles_missing_url(self):
-        state.mark_seen("4JGFF8FE2SB431338", "unknown", None)
-        seen = state.load_seen_vins()
-        self.assertEqual(seen["4JGFF8FE2SB431338"]["listing_urls"], [])
+        state.mark_seen("VIN", "unknown", None, {})
+        urls = state.load_seen_vins()["VIN"]["per_provider"]["unknown"]["listing_urls"]
+        self.assertEqual(urls, [])
+
+    def test_get_last_metadata_returns_none_when_unseen(self):
+        self.assertIsNone(state.get_last_metadata("VIN", "cargurus"))
+        state.mark_seen("VIN", "cargurus", None, {"price": 90000})
+        # Same VIN, different provider — still None
+        self.assertIsNone(state.get_last_metadata("VIN", "autotrader"))
+        # Same VIN+provider — returns the snapshot
+        self.assertEqual(state.get_last_metadata("VIN", "cargurus"), {"price": 90000})
 
     # ---- queue ----
 
@@ -97,10 +123,19 @@ class TestState(unittest.TestCase):
         self.assertEqual(triaged[0]["vin"], "A")
         self.assertEqual(triaged[1]["verdict"], "ACTION")
 
+    def test_latest_triage_for_vin_returns_most_recent(self):
+        self.assertIsNone(state.latest_triage_for_vin("A"))
+        state.append_triaged({"vin": "A", "verdict": "PASS", "triaged_at": "2026-01-01T00:00:00"})
+        state.append_triaged({"vin": "B", "verdict": "ACTION", "triaged_at": "2026-01-02T00:00:00"})
+        state.append_triaged({"vin": "A", "verdict": "ACTION", "triaged_at": "2026-01-03T00:00:00"})
+        latest = state.latest_triage_for_vin("A")
+        self.assertEqual(latest["verdict"], "ACTION")
+        self.assertEqual(latest["triaged_at"], "2026-01-03T00:00:00")
+
     # ---- file format sanity ----
 
     def test_seen_vins_file_is_valid_json(self):
-        state.mark_seen("4JGFF8FE2SB431338", "cargurus", "https://example.com/x")
+        state.mark_seen("4JGFF8FE2SB431338", "cargurus", "https://example.com/x", {"price": 90000})
         raw = state.SEEN_VINS_PATH.read_text()
         loaded = json.loads(raw)
         self.assertIn("4JGFF8FE2SB431338", loaded)
