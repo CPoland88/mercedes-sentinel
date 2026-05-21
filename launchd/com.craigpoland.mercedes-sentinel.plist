@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Mercedes Sentinel daily run.
+
+  Fires at 4:00 PM local time on the Mac mini, every day.
+  Invokes the venv's Python with `-m scripts.daily`, which runs:
+    1. ingest  (poll Gmail, parse, enqueue)
+    2. triage  (drain queue via Claude API, write verdicts)
+    3. notify  (build + send daily summary email)
+
+  Install: launchd/install.sh (copies this file into
+           ~/Library/LaunchAgents/ and loads via launchctl bootstrap).
+
+  Wake-from-sleep is NOT controlled by this plist. The Mac must be
+  woken separately via pmset — see launchd/install.sh for the exact
+  command. Without that step, this job only runs when the machine
+  happens to be awake at 4 PM.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.craigpoland.mercedes-sentinel</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/craigpoland/Documents/Claude/Projects/Mercedes Sentinel/.venv/bin/python3</string>
+        <string>-m</string>
+        <string>scripts.daily</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/craigpoland/Documents/Claude/Projects/Mercedes Sentinel</string>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>16</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/craigpoland/Library/Logs/MercedesSentinel/run.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/craigpoland/Library/Logs/MercedesSentinel/run.log</string>
+
+    <!-- Do not run immediately on load; wait for the next 4 PM. -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <!-- Do not respawn after exit; this is a once-daily job. -->
+    <key>KeepAlive</key>
+    <false/>
+
+    <!-- Standard PATH so the venv's python can find its own deps. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+</dict>
+</plist>
