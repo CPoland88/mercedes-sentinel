@@ -40,7 +40,8 @@ see WORKSPACE.md.
   this — verify from photos and VIN/build, never from the listing's
   seating field alone.
 - **Exterior:** Blue. Acceptable factory colors: **Emerald Green
-  Metallic, Twilight Blue Metallic**.
+  Metallic, Twilight Blue Metallic, MANUFAKTUR Signature Ireland
+  Mid Green Metallic**.
 
 ### Economic frame
 
