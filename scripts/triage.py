@@ -4,13 +4,11 @@ Reads candidates from data/queue.json, sends each to Claude (Sonnet 4.6)
 with the full project rubric as context, writes structured verdicts to
 data/triaged.json.
 
-Status: C2 of a 3-commit build.
-  - C1 (shipped): poll Gmail + parse + dedup + queue.
-  - C2 (this file): autonomous triage via Claude API → verdicts in
-    triaged.json. The dedup gate now tracks per-provider metadata so
-    price-drop alerts re-trigger triage.
-  - C3 (next): launchd daily-at-4-PM + macOS notification + email
-    summary.
+Second stage of the daily pipeline (ingest → triage → email summary).
+Invoked by scripts/daily.py at 4 PM via launchd. The dedup gate in
+ingest tracks per-provider metadata snapshots so price-drop alerts
+re-trigger triage on a previously-seen VIN. See scripts/README.md for
+the full architecture and per-stage cost notes.
 
 Run modes:
 

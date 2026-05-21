@@ -4,13 +4,11 @@ Polls Gmail for new saved-search alerts (Cars.com, AutoTrader, CarGurus),
 extracts VINs and listing URLs from each, dedups by VIN, and queues new
 candidates for downstream triage.
 
-Status: C1 of a 3-commit build.
-  - C1 (this file): poll + parse + dedup + queue. No Claude API, no
-    notifications.
-  - C2 (next): autonomous triage via Claude API → verdicts in
-    triaged.json.
-  - C3 (last): launchd daily-at-4-PM + macOS notification + email
-    summary.
+First stage of the daily pipeline (ingest → triage → email summary).
+Triage lives in scripts/triage.py and runs autonomously via Claude;
+the daily orchestrator scripts/daily.py wires both stages plus an
+email summary, and is invoked at 4 PM by launchd. See scripts/README.md
+for the full architecture and per-stage cost notes.
 
 Run modes:
 
