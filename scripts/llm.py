@@ -27,6 +27,19 @@ Responsibilities:
 The Anthropic client is constructed lazily so test code can patch
 `get_client` to inject a mock without needing ANTHROPIC_API_KEY set
 in the environment.
+
+## Per-vehicle profile (scalability hooks)
+
+`RUBRIC_FILES`, `SYSTEM_TEMPLATE_PATH`, and `DEFAULT_MODEL` are the
+per-vehicle profile constants. The functions in this module use them
+as defaults but accept explicit overrides (`rubric_files=`,
+`system_template_path=`, `model=`) so the same infrastructure can
+serve multiple vehicle pursuits without a code fork — e.g., a future
+umbrella orchestrator that triages Mercedes candidates with the MB
+profile and Corvette candidates with a separate profile in the same
+Python process. When cloning this repo for a different vehicle,
+either (a) edit the three module constants in-place, or (b) leave
+them and pass overrides from a per-vehicle config module.
 """
 from __future__ import annotations
 
@@ -73,10 +86,26 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def assemble_system_prompt() -> str:
-    """Build the full system prompt: template + rubric concatenation."""
-    parts = [_read(SYSTEM_TEMPLATE_PATH)]
-    for rel_path in RUBRIC_FILES:
+def assemble_system_prompt(
+    rubric_files: Optional[list] = None,
+    system_template_path: Optional[Path] = None,
+) -> str:
+    """Build the full system prompt: template + rubric concatenation.
+
+    Both arguments default to the module-level constants, which is the
+    Mercedes Sentinel profile. Pass overrides when running a different
+    vehicle profile through the same triage infrastructure — for
+    example, an umbrella orchestrator can call this once per profile
+    per batch.
+    """
+    files = rubric_files if rubric_files is not None else RUBRIC_FILES
+    template = (
+        system_template_path
+        if system_template_path is not None
+        else SYSTEM_TEMPLATE_PATH
+    )
+    parts = [_read(template)]
+    for rel_path in files:
         full_path = REPO_ROOT / rel_path
         if not full_path.exists():
             logger.warning("Rubric file missing, skipping: %s", rel_path)
@@ -155,6 +184,8 @@ def triage(
     candidate: dict,
     raw_email_body: Optional[str] = None,
     model: str = DEFAULT_MODEL,
+    rubric_files: Optional[list] = None,
+    system_template_path: Optional[Path] = None,
 ) -> dict:
     """Send one candidate to Claude and return the parsed verdict dict.
 
@@ -168,6 +199,10 @@ def triage(
           "action_items": [str, ...]    # required when verdict==ACTION
         }
 
+    Optional `rubric_files` and `system_template_path` let a caller
+    override the per-vehicle profile without mutating module state —
+    useful for an umbrella orchestrator running multiple profiles.
+
     Raises RuntimeError on auth/config issues or if the API persistently
     fails after MAX_RETRIES. Callers should catch and decide whether to
     re-queue the candidate or mark it NEEDS_HUMAN.
@@ -175,13 +210,19 @@ def triage(
     client = get_client()
     tool_schema = load_triage_tool()
 
-    # System prompt — large + identical across calls, so we mark it for
-    # Anthropic's prompt cache. The rubric will be billed at 10% on
-    # subsequent calls within the 5-minute cache window.
+    # System prompt — large + identical across calls (for a given
+    # profile), so we mark it for Anthropic's prompt cache. The rubric
+    # will be billed at 10% on subsequent calls within the 5-minute
+    # cache window. NOTE: switching profiles inside one batch will
+    # invalidate the cache between profiles — group by profile if
+    # you care about hit rate.
     system_blocks = [
         {
             "type": "text",
-            "text": assemble_system_prompt(),
+            "text": assemble_system_prompt(
+                rubric_files=rubric_files,
+                system_template_path=system_template_path,
+            ),
             "cache_control": {"type": "ephemeral"},
         }
     ]
@@ -260,11 +301,22 @@ def _is_transient(exc: Exception) -> bool:
 
 # ---------- token estimation (used by --dry-run) ----------
 
-def estimate_input_tokens() -> int:
+def estimate_input_tokens(
+    rubric_files: Optional[list] = None,
+    system_template_path: Optional[Path] = None,
+) -> int:
     """Rough estimate of system-prompt input tokens. Used by --dry-run
     to give a cost sanity check without calling the API.
 
     Approximation: ~4 chars per token for English text. This will be
     high by 10-20% vs Anthropic's actual tokenizer; for budgeting that
-    overestimate is the safe direction."""
-    return len(assemble_system_prompt()) // 4
+    overestimate is the safe direction.
+
+    Accepts the same per-vehicle profile overrides as
+    `assemble_system_prompt`."""
+    return len(
+        assemble_system_prompt(
+            rubric_files=rubric_files,
+            system_template_path=system_template_path,
+        )
+    ) // 4
