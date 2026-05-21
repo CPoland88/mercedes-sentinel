@@ -2,11 +2,12 @@
 
 Local automation that polls a dedicated Gmail label for saved-search
 alerts (Cars.com, AutoTrader, CarGurus), extracts VINs and listing URLs,
-dedups against past sightings, queues new candidates, and triages each
-via Claude (Sonnet 4.6) against the project's living rubric.
+dedups against past sightings, triages each via Claude (Sonnet 4.6)
+against the project's living rubric, and emails a daily summary —
+running automatically once a day via launchd.
 
-This README documents C1 (ingest) and C2 (triage). C3 will add
-`launchd` scheduling and macOS notifications.
+This README documents the complete 3-commit build: C1 (ingest),
+C2 (triage), C3 (scheduled daily runner + email summary).
 
 ## Architecture
 
@@ -14,6 +15,8 @@ This README documents C1 (ingest) and C2 (triage). C3 will add
 scripts/
   ingest.py                  # C1 entry — argparse, run_live, run_fixtures
   triage.py                  # C2 entry — drain queue, call Claude, write verdicts
+  daily.py                   # C3 entry — orchestrate ingest + triage + email
+  notify.py                  # C3 — build daily summary, send via Gmail SMTP
   mail.py                    # Gmail IMAP context manager
   state.py                   # JSON I/O for seen-vins, queue, triaged
   llm.py                     # Anthropic client + prompt assembly + retry
@@ -32,7 +35,13 @@ scripts/
     test_state_metadata.py   # per-provider dedup gate (re-triage logic)
     test_parsers.py          # in-memory synthetic emails
     test_triage.py           # mocked Anthropic client; verdict flow + queue mechanics
+    test_notify.py           # mocked SMTP; email format + send
+    test_daily.py            # mocked ingest+triage+notify; orchestrator control flow
     fixtures/                # real .eml samples (gitignored)
+launchd/
+  com.craigpoland.mercedes-sentinel.plist   # the launchd job definition
+  install.sh                                # copy plist + launchctl bootstrap
+  uninstall.sh                              # bootout + remove plist
 data/
   seen-vins.json             # VIN -> first/last seen, per_provider metadata snapshots
   queue.json                 # FIFO of candidates awaiting triage (C2 input)
@@ -194,6 +203,120 @@ with a price drop, the new metadata differs from the stored snapshot
 and the candidate is enqueued for fresh triage. A VIN that's been
 re-triaged multiple times accumulates a verdict history in
 `triaged.json` — entries are append-only.
+
+## Scheduled operation (C3)
+
+C3 wires up the daily 4 PM cadence and the email summary. After
+installation, the system runs itself — new alerts get ingested,
+triaged, and summarized to your inbox without any manual
+invocation.
+
+### What runs at 4 PM each day
+
+`scripts/daily.py` is the orchestrator that launchd invokes. It
+runs the pipeline in sequence:
+
+1. **Ingest** — poll Gmail's MB-Sentinel label, parse new alerts,
+   dedup against `data/seen-vins.json`, enqueue new candidates.
+2. **Triage** — drain `data/queue.json`, call Claude per
+   candidate, write verdicts to `data/triaged.json`.
+3. **Email** — build a plaintext daily summary from today's
+   verdicts and send via Gmail SMTP to `EMAIL_TO` (defaults to
+   `IMAP_USERNAME`).
+
+Partial failures are tolerated: a failed ingest doesn't prevent
+triage from draining yesterday's queue; a failed triage still
+produces an email reporting the failure; a failed email is logged
+but doesn't lose verdict data (`triaged.json` is the source of
+truth).
+
+### Install the launchd job
+
+From the repo root on your Mac mini:
+
+```bash
+bash launchd/install.sh
+```
+
+The script copies `launchd/com.craigpoland.mercedes-sentinel.plist`
+into `~/Library/LaunchAgents/`, loads it via `launchctl bootstrap`,
+creates the log directory at `~/Library/Logs/MercedesSentinel/`,
+and prints the one remaining manual step.
+
+### Enable scheduled wake-from-sleep
+
+The plist alone doesn't wake the Mac. To make sure the machine is
+awake at 4 PM, run (once, prompts for password):
+
+```bash
+sudo pmset repeat wakeorpoweron MTWRFSU 15:55:00
+```
+
+This wakes the Mac at 3:55 PM every day, 5 minutes before launchd
+fires the job at 4:00 PM. The 5-minute headroom ensures network
+and DNS are fully online before the script tries to run.
+
+Verify with `pmset -g sched`. Cancel any time with
+`sudo pmset repeat cancel`.
+
+### Test the schedule without waiting until 4 PM
+
+```bash
+launchctl kickstart gui/$UID/com.craigpoland.mercedes-sentinel
+```
+
+Triggers the job immediately. You should receive the daily summary
+email within ~30 seconds (assuming Anthropic API + Gmail SMTP are
+both reachable).
+
+### Daily summary email format
+
+Subject line carries the headline counts so you can triage from
+the lock screen:
+
+```
+[Sentinel] 2026-05-21 — 1 ACTION, 0 NEEDS_HUMAN, 3 PASS
+```
+
+Body is plaintext (most reliable across mobile clients), organized
+as: header → errors (if any, surfaced at top) → ACTION block →
+NEEDS_HUMAN block → PASS block → run stats. ACTION verdicts include
+the listing URL and 2-4 concrete action items. PASS verdicts get
+a one-line reason. The body always shows all three verdict blocks
+even when empty, so silence means "checked, nothing matched" rather
+than "system didn't run."
+
+### Logs
+
+`~/Library/Logs/MercedesSentinel/run.log` — append-only, captures
+both stdout and stderr from the daily run. Tail to watch the next
+run live:
+
+```bash
+tail -f ~/Library/Logs/MercedesSentinel/run.log
+```
+
+### Uninstall
+
+```bash
+bash launchd/uninstall.sh
+```
+
+Removes the plist and unloads the job. Data and logs are left
+intact. To also cancel the scheduled wake, run
+`sudo pmset repeat cancel`.
+
+### Run modes for daily.py
+
+The orchestrator can also be invoked manually for testing:
+
+```bash
+python -m scripts.daily          # full pipeline + email (what launchd runs)
+python -m scripts.daily --no-email  # skip email send (handy when iterating
+                                    # on parsers or prompts without spamming
+                                    # your inbox)
+python -m scripts.daily -v       # verbose / debug logging
+```
 
 ## Running the test suite
 
