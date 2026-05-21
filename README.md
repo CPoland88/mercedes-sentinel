@@ -1,140 +1,109 @@
-# used-car-finder
+# Mercedes Sentinel
 
-A Claude skill that helps you shop for a reliable used car on Facebook
-Marketplace. It filters out curbstoners, scams, and money-pit models;
-reads Carfax reports; identifies trim from photos; estimates fair value;
-and builds defect-anchored negotiation cases.
+Autonomous franchise-dealer monitor for a used Mercedes-Benz GLS, model year 2024 or newer. Polls dedicated saved-search alerts in Gmail every afternoon, extracts candidates, scores each against a tight buyer spec via Claude (Sonnet 4.6), and emails a structured daily summary. Designed for a single buyer with a hard deadline and no time to manually scan inventory across three sites.
 
 ## What this is
 
-A skill, not a scraper. It teaches Claude how to evaluate a Marketplace
-listing the way a skeptical friend who knows cars would. You paste
-listings, photos, and Carfax PDFs into a conversation, and Claude walks
-you through the buy/walk decision.
+A personal automation, not a public skill. The system runs on one Mac mini, against one Gmail label, for one buyer's spec — narrow on purpose. It exists to compress the daily 15-minute manual workflow of "open three tabs, check for new listings, judge each one" into a 30-second email Craig can read while leaving the office.
 
-## Why this exists
+The forked Facebook Marketplace skill ([pjdoland/used-car-finder](https://github.com/pjdoland/used-car-finder)) provided the original judgment-framework scaffolding. The Marketplace ingestion path, curbstoner detection, and multi-make reliability heuristics were all gutted; what remains is the rubric structure repurposed for franchise-dealer GLS shopping.
 
-Roughly 1 in 3 of the most appealing-looking listings on Facebook
-Marketplace have a significant red flag visible only in the body text
-or the seller's profile. Spotting these takes practice. This skill
-packages that practice.
+## The driver
 
-The judgment framework comes from a real used-car search in 2026: a
-single buyer evaluating ~2,200 listings in a single metro, eventually
-shortlisting ~12 verified picks. The patterns generalize.
+Third child due October 2026. Current household fleet (2022 Rivian R1T + 2021 Porsche Macan S) does not seat three kids. A 7-seat or 6-seat-captain's-chairs GLS must be in service before the due date. Working backward: the serious buy window closes late August 2026 to allow PPI, financing, and out-of-state transport if needed. The system exists to make sure no eligible candidate slips by during that window.
 
-## Installation
+## Spec
 
-### As a Claude Code skill
+Captured authoritatively in [`CONTEXT.md`](./CONTEXT.md). Summary:
 
-Clone this repo into your `~/.claude/skills/` directory:
+- **Vehicle:** Mercedes-Benz GLS, model year 2024+ (verified via VIN position 10).
+- **Trim:** GLS 580 (V8) preferred. GLS 450 (I6) acceptable only when priced ≥ $15K below comparable 580s.
+- **Seating:** 7-seat bench OR 6-seat captain's chairs both qualify; 7-seat is the tiebreaker at equal ask.
+- **Color:** Blue family — Emerald Green Metallic, Twilight Blue Metallic.
+- **Geography:** 250-mile hard cap from 22180 (Vienna, VA). Beyond 250 → auto-Pass.
+- **Mileage:** ≤ 40,000.
+- **Title:** Clean only.
+- **CPO:** Mercedes-Benz Certified Pre-Owned strongly preferred.
 
-```sh
-cd ~/.claude/skills
-git clone https://github.com/pjdoland/used-car-finder.git
-```
+## How it works
 
-The skill activates automatically when you ask Claude for help with
-used-car shopping in a Claude Code session.
+Three-commit build, completed May 2026. Each commit is a logical layer on top of the previous:
 
-### Used by itself
+**C1 — Ingest.** [`scripts/ingest.py`](./scripts/) polls a dedicated Gmail label (`MB-Sentinel`) via IMAP, dispatches each unread email to a provider-specific parser (Cars.com, AutoTrader, CarGurus, or a regex fallback), extracts VIN + listing URL + price + mileage + deal badge, dedups against `data/seen-vins.json`, and enqueues new candidates in `data/queue.json`. The dedup gate is metadata-aware — when CarGurus re-surfaces a known VIN with a price drop, the changed metadata triggers re-triage rather than getting silently filtered.
 
-You can also paste the contents of `SKILL.md` into any Claude
-conversation (Claude.ai, Claude Code, or the API). The reference files
-in `references/` are pulled on demand.
+**C2 — Triage.** [`scripts/triage.py`](./scripts/) drains the queue and sends each candidate to Claude (Sonnet 4.6) with the full project rubric (CONTEXT.md + four references files) inlined into a cached system prompt. Claude returns a structured verdict via a forced tool-use schema: `ACTION` (worth contacting the dealer), `PASS` (not worth pursuing), or `NEEDS_HUMAN` (data missing or ambiguous, escalate). Verdicts land in `data/triaged.json` as an append-only history.
 
-### Optional: Playwright MCP (recommended)
+**C3 — Schedule + notify.** [`scripts/daily.py`](./scripts/) is the orchestrator launchd invokes at 4 PM ET each day. It runs ingest → triage → email summary in sequence. Partial failures are tolerated (failed ingest doesn't block triage; failed triage still produces an email reporting the failure). The summary email lands by ~4:01 PM with subject `[Sentinel] DATE — N ACTION, N NEEDS_HUMAN, N PASS` and a plaintext body covering every verdict produced today.
 
-If you install the [Playwright MCP server](https://github.com/microsoft/playwright-mcp),
-the skill can drive a browser for you: navigate Marketplace search
-results, open listings, click into seller profiles, and apply the
-curbstoner check without you pasting screenshots. The skill detects
-Playwright at runtime; without it, you paste listings manually and
-everything else works the same.
+After installation, the system runs itself. No manual invocation required.
 
-To install Playwright MCP for Claude Code:
+## Setup
 
-```sh
-claude mcp add playwright -- npx -y @playwright/mcp@latest
-```
-
-You will need to be logged into Facebook in the browser Playwright
-controls. The skill does not handle credentials and will pause if FB
-challenges the session.
-
-## How to use it
-
-The skill walks you through four stages:
-
-1. **Intake.** Claude asks your metro, budget, body-style preferences,
-   family situation, mechanical comfort, and belt-tolerance.
-2. **Search and filter.** You paste listings (URLs or screenshots);
-   Claude classifies them as Tier 1 / Tier 2 / Watch / Kill.
-3. **Verify and evaluate.** On a specific car, Claude walks the
-   curbstoner check, reads the Carfax, identifies trim from photos,
-   and produces a PPI checklist.
-4. **Close.** Claude builds a defect-anchored negotiation case and
-   sets up insurance coverage.
-
-Try: *"Help me find a reliable used car under $7,000 in [your metro]."*
+See **[`scripts/README.md`](./scripts/README.md)** for the full installation guide — Gmail app password, `.env` config, Python venv, launchd job, and the `pmset` scheduled-wake command. Five steps end-to-end.
 
 ## Layout
 
 ```
-SKILL.md                         main skill file (loaded by Claude)
-references/
-  reliable-makes.md              tier list of makes/models
-  curbstoner-playbook.md         seller-profile rubric
-  scam-patterns.md               body-text red flags
-  carfax-reading.md              how to read a Carfax PDF
-  trim-id-guide.md               identifying trim from photos
-  ppi-checklist.md               pre-purchase inspection
-  timing-chain-vs-belt.md        engine reference
-  negotiation-framework.md       defect-anchored offers
-  insurance-by-acv.md            coverage by vehicle value
-examples/
-  example-1-good-listing.md      green-flag listing walkthrough
-  example-2-curbstoner.md        curbstoner detection walkthrough
-  example-3-scam.md              wire-fraud scam walkthrough
-tests/
-  self-test.md                   regression tests for the skill
+README.md                  this file
+CONTEXT.md                 authoritative buyer spec
+WORKSPACE.md               operating rules (no scraping, secrets stay out of git, etc.)
+CLAUDE.md                  Claude instructions for working on this project
+SKILL.md                   skill manifest (legacy from fork; activates for manual queries)
+LICENSE                    MIT, inherited from upstream fork
+
+scripts/                   the autonomous pipeline
+  README.md                full setup + run-mode documentation
+  ingest.py                C1 — Gmail poll + parse + dedup + queue
+  triage.py                C2 — Claude API + tool-use verdict
+  daily.py                 C3 — daily orchestrator
+  notify.py                C3 — email builder + Gmail SMTP
+  state.py                 JSON I/O for seen-vins / queue / triaged
+  mail.py                  Gmail IMAP context manager
+  llm.py                   Anthropic client + prompt assembly
+  parsers/                 per-provider email parsers + regex fallback
+  prompts/                 triage prompt template + tool-use schema
+  tests/                   77 unit tests, all mocked, no network access
+  requirements.txt         python-dotenv + beautifulsoup4 + anthropic
+
+launchd/                   macOS scheduling
+  com.craigpoland.mercedes-sentinel.plist
+  install.sh               copy plist + launchctl bootstrap + print pmset instructions
+  uninstall.sh             symmetric teardown
+
+references/                buyer's playbook (loaded by triage AND used manually)
+  dealer-tier-list.md         dealers within 250 mi, by drive time
+  gls-trim-decoder.md         VIN positions + data card workflow
+  mbusa-cpo-criteria.md       CPO eligibility + warranty math + verification
+  comp-pricing-framework.md   trailing-90d valuation methodology
+  carfax-reading.md           Carfax red flags for 2024+ GLS
+  negotiation-framework.md    franchise-dealer negotiation playbook
+  trim-id-guide.md            photo-based GLS option verification
+
+data/                      runtime state (gitignored except .gitkeep)
+  seen-vins.json              dedup memory with per-provider metadata snapshots
+  queue.json                  FIFO of candidates awaiting triage
+  triaged.json                append-only verdict log
 ```
 
-## Scope and limitations
+## Operating rules
 
-- **Facebook Marketplace only.** Craigslist, AutoTrader, CarGurus, and
-  dealer sites have different scam patterns and seller dynamics.
-- **US market, US insurance.** Some references (state inspection,
-  insurance carriers, title-branding rules) assume US conventions.
-- **Private-party purchases.** Dealer purchases follow different rules.
-- **Under ~$15K.** The judgment framework is calibrated for older,
-  higher-mileage cars where reliability matters more than features.
-  For newer or more expensive cars, traditional consumer-research
-  approaches (Consumer Reports, Edmunds) are also useful.
+Captured in [`WORKSPACE.md`](./WORKSPACE.md). The non-negotiable ones:
 
-## Self-test
+- **No scraping layer.** Email-alert ingestion only. No Facebook Marketplace, no Playwright, no browser automation against dealer sites. Provider TOS and IP-block risk are the reasons; legal cleanliness is the third.
+- **Secrets stay out of git.** All credentials live in `.env` at repo root, which is gitignored. `.env.example` documents the required keys.
+- **Never delete files without explicit permission.** Renames and rewrites are fine; deletions require a yes.
+- **Preserve the upstream LICENSE.** The fork is MIT; the LICENSE file remains intact crediting pjdoland.
 
-`tests/self-test.md` contains 5 synthetic listings with expected
-verdicts. Run them past the skill periodically to catch regressions if
-you modify the references.
+## Scope
 
-## Contributing
+In scope: monitoring franchise-dealer inventory for one specific vehicle spec, in one specific geographic region, for one specific buyer with a hard deadline.
 
-PRs welcome. The kind of contributions that help:
-
-- New scam patterns you've encountered on Marketplace
-- Model-specific known issues for cars not yet in `reliable-makes.md`
-- Trim-identification tells for brands not yet documented
-- Regional notes for state-specific insurance or title rules
-- Additional self-test cases
+Out of scope: anything generalizable. This is a single-buyer, single-vehicle automation. The patterns are reusable; the configuration is not.
 
 ## License
 
-MIT. See LICENSE.
+MIT, inherited from the upstream fork. See [`LICENSE`](./LICENSE).
 
-## Disclaimer
+## Acknowledgments
 
-This skill provides general guidance for evaluating used-car listings.
-It is not a substitute for a professional pre-purchase inspection, a
-licensed mechanic's opinion, or legal advice. The author is not
-responsible for any purchase decisions made using this skill.
+Forked from [pjdoland/used-car-finder](https://github.com/pjdoland/used-car-finder). The judgment-framework scaffolding (verdict tiers, rubric layout, references/ structure) is theirs. The franchise-dealer ingestion pipeline, GLS-specific spec, Claude-API triage layer, and launchd scheduling are this fork's additions.
