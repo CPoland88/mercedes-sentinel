@@ -1,13 +1,23 @@
-# Runtime dependencies for scripts/ingest.py (C1).
-# C2 will add `anthropic` for autonomous triage.
+# Runtime dependencies for the daily pipeline (ingest → triage → notify).
 
-# .env loading at process start (IMAP creds, later: ANTHROPIC_API_KEY)
+# .env loading at process start (IMAP creds, ANTHROPIC_API_KEY,
+# SMTP creds — see .env.example for the full list).
 python-dotenv>=1.0,<2.0
 
 # HTML stripping in the fallback parser when an alert ships HTML-only
-# (no text/plain alternative).
+# (no text/plain alternative). Also used by scripts/hydrate.py to
+# parse cars.com vehicledetail pages for VIN, dealer, color, packages.
 beautifulsoup4>=4.12,<5.0
 
-# Claude API client (C2: autonomous triage). Pinned to the major
-# series we tested against; bump conservatively as new versions land.
+# Claude API client used by scripts/triage.py for autonomous candidate
+# evaluation. Pinned to the major series we tested against; bump
+# conservatively as new versions land.
 anthropic>=0.40,<1.0
+
+# HTTP client used by scripts/hydrate.py to follow listing URLs that
+# arrived in authorized email alerts (Cars.com vehicledetail pages
+# don't include VIN/dealer in the alert body — we follow the link the
+# user already received). See WORKSPACE.md "Carve-out for hydration"
+# for the posture: realistic UA, jitter between requests, one request
+# per email-referenced URL, no parallel fan-out, no headless browser.
+httpx>=0.27,<1.0
