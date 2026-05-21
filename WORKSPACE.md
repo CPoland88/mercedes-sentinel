@@ -39,6 +39,16 @@ stop and flag the conflict rather than guessing.
   history.
 - **No scraping layer.** Do not add Facebook Marketplace or Playwright
   browser-automation code. Email-alert ingestion only.
+  - **Carve-out for hydration:** a polite HTTP GET against a listing
+    URL that arrived in an authorized email alert (Cars.com,
+    AutoTrader, CarGurus, MBUSA) is in-scope and not "scraping" in
+    the sense this rule forbids. We are following a link the user
+    already received, not crawling. Posture: realistic User-Agent,
+    1.5–3s jitter between requests, one request per email-referenced
+    URL, no parallel fan-out, no auth bypass, no headless browser.
+    Anything beyond that (search-result enumeration, dealer-site
+    crawling, JS rendering, captcha solving) stays out of scope and
+    requires a new conversation before it lands.
 - **Preserve the upstream LICENSE.** The fork is MIT — keep pjdoland's
   LICENSE file intact in the repo.
 
