@@ -64,6 +64,27 @@ class TestFallbackParser(unittest.TestCase):
         candidates = fallback.parse(msg)
         self.assertEqual(len(candidates), 0)
 
+    def test_all_digit_17_char_string_is_not_a_vin(self):
+        """Real VINs always have at least one letter (WMI is alpha,
+        model-year position 10 is always a letter). An all-digit
+        17-char string is some other identifier (observed in the wild
+        from cars.com listing pages: `21360397902943945`). Filtering
+        these prevents poisoning seen-vins.json with bogus dedup keys."""
+        body = "Inventory ID 21360397902943945 listed at https://x.example.com/y"
+        msg = _email_from_bytes(_build_email("alerts@example.com", "alert", body))
+        candidates = fallback.parse(msg)
+        self.assertEqual(len(candidates), 0)
+
+    def test_filters_bogus_id_keeps_real_vin(self):
+        body = (
+            "Listing 21360397902943945 with VIN 4JGFF8FE2SB431338 "
+            "at https://dealer.example.com/inv/4JGFF8FE2SB431338"
+        )
+        msg = _email_from_bytes(_build_email("alerts@example.com", "alert", body))
+        candidates = fallback.parse(msg)
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0]["vin"], "4JGFF8FE2SB431338")
+
     def test_vin_pattern_requires_exactly_17_chars(self):
         body = "Too short: 4JGFF8FE2SB43133 ; Too long: 4JGFF8FE2SB4313381"
         msg = _email_from_bytes(_build_email("alerts@example.com", "alert", body))

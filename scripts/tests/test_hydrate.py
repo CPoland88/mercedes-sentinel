@@ -223,6 +223,36 @@ class TestParseRegexFallback(unittest.TestCase):
         listing = hydrate._parse_vehicledetail_html(html)
         self.assertIsNone(listing.vin)
 
+    def test_all_digit_17_char_id_is_not_a_vin(self):
+        """Cars.com's vehicledetail HTML embeds an internal listing ID
+        that matches the 17-char VIN regex on length but is all digits
+        (observed in the wild on 21-May-2026: `21360397902943945`).
+        Real VINs always have at least one letter; the regex fallback
+        must skip the bogus ID."""
+        html = "<html><body>Inventory ID: 21360397902943945</body></html>"
+        listing = hydrate._parse_vehicledetail_html(html)
+        self.assertIsNone(listing.vin)
+
+    def test_bogus_id_before_real_vin_does_not_block_match(self):
+        """When an all-digit 17-char ID appears EARLIER in the HTML than
+        a real VIN, the regex must iterate past the bogus one. Previous
+        behavior used re.search() and returned the first hit unconditionally."""
+        html = (
+            "<html><body>"
+            "<span>Listing ID: 21360397902943945</span>"
+            "<span>VIN: 4JGFF8FE2SB431338</span>"
+            "</body></html>"
+        )
+        listing = hydrate._parse_vehicledetail_html(html)
+        self.assertEqual(listing.vin, "4JGFF8FE2SB431338")
+
+    def test_css_selector_rejects_all_digit_data_vin(self):
+        """Defense in depth: if cars.com ever puts a bogus ID in a
+        data-vin attribute, the CSS selector path filters it out too."""
+        html = '<html><body><div data-vin="21360397902943945">x</div></body></html>'
+        listing = hydrate._parse_vehicledetail_html(html)
+        self.assertIsNone(listing.vin)
+
 
 # ---------- Strategy layering ----------
 

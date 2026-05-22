@@ -290,6 +290,20 @@ def hydrate_cars_com(url: str, fetcher: Optional[Fetcher] = None) -> HydratedLis
 # FMVSS 565 VIN pattern, same as parsers/fallback.py.
 VIN_PATTERN = re.compile(r"\b[A-HJ-NPR-Z0-9]{17}\b")
 
+# Real VINs always contain at least one letter (WMI is alpha, model-year
+# position 10 is always a letter per FMVSS 565). An all-digit 17-char
+# string is some other identifier — e.g. cars.com's vehicle-detail page
+# embeds an internal listing ID that matches the VIN regex on length
+# but is all digits. Without this filter, the regex fallback grabs it
+# and pollutes seen-vins.json with a bogus dedup key. Observed in the
+# wild on the 21-May-2026 price-drop fixture: `21360397902943945`.
+_VIN_HAS_LETTER = re.compile(r"[A-HJ-NPR-Z]")
+
+
+def _is_plausible_vin(s: str) -> bool:
+    return bool(_VIN_HAS_LETTER.search(s))
+
+
 CPO_BADGE_PATTERN = re.compile(
     r"\b(Mercedes-Benz Certified Pre-Owned|Certified Pre-Owned|CPO)\b",
     re.IGNORECASE,
@@ -403,7 +417,7 @@ def _apply_css_selectors(soup: BeautifulSoup, listing: HydratedListing) -> None:
             attr_vin = el.get("data-vin") if el.has_attr("data-vin") else None
             text = (attr_vin or el.get_text(strip=True) or "").upper()
             m = VIN_PATTERN.search(text)
-            if m:
+            if m and _is_plausible_vin(m.group(0)):
                 listing.vin = m.group(0)
                 break
 
@@ -433,9 +447,12 @@ def _apply_css_selectors(soup: BeautifulSoup, listing: HydratedListing) -> None:
 
 def _apply_regex_fallbacks(html: str, listing: HydratedListing) -> None:
     """Last-resort raw-HTML regex. Catches a VIN that slipped past
-    JSON-LD and CSS selectors. Intentionally minimal — anything more
-    structured belongs in the upper layers."""
+    JSON-LD and CSS selectors. Iterates so an all-digit 17-char ID
+    earlier in the page doesn't block us from finding a real VIN
+    later — `search()` returned only the first match and silently
+    accepted bogus IDs in the 21-May-2026 fixture run."""
     if listing.vin is None:
-        m = VIN_PATTERN.search(html)
-        if m:
-            listing.vin = m.group(0)
+        for m in VIN_PATTERN.finditer(html):
+            if _is_plausible_vin(m.group(0)):
+                listing.vin = m.group(0)
+                return

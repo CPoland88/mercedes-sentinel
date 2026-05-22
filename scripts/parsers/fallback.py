@@ -15,6 +15,18 @@ import re
 # FMVSS 565 VIN: 17 chars from A-Z minus {I, O, Q} and 0-9.
 VIN_PATTERN = re.compile(r"\b[A-HJ-NPR-Z0-9]{17}\b")
 
+# Real VINs always contain at least one letter — the manufacturer ID
+# (positions 1-3, WMI) is always alpha for the manufacturers we monitor,
+# and the model-year position (10) is always a letter per FMVSS 565.
+# An all-digit 17-char string is some other identifier (a cars.com
+# inventory ID, a stock number, etc.) and must NOT be persisted as a
+# VIN — that would poison the seen-vins dedup state with a bogus key.
+_VIN_HAS_LETTER = re.compile(r"[A-HJ-NPR-Z]")
+
+
+def _is_plausible_vin(s: str) -> bool:
+    return bool(_VIN_HAS_LETTER.search(s))
+
 # HTTP(S) URL — terminate on whitespace and common HTML/email punctuation.
 URL_PATTERN = re.compile(r"https?://[^\s<>\"')\]]+")
 
@@ -98,8 +110,11 @@ def parse(msg: Message) -> List[dict]:
     if not body:
         return []
 
-    # Preserve insertion order; dedup.
-    vins = list(dict.fromkeys(VIN_PATTERN.findall(body)))
+    # Preserve insertion order; dedup; filter out 17-char strings that
+    # don't look like real VINs (all-digit, etc.) — see _is_plausible_vin.
+    vins = list(dict.fromkeys(
+        v for v in VIN_PATTERN.findall(body) if _is_plausible_vin(v)
+    ))
     urls = URL_PATTERN.findall(body)
 
     candidates: List[dict] = []
