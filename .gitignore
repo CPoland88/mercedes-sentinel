@@ -55,3 +55,7 @@ scripts/tests/fixtures/*.eml
 # names, sales-rep contacts, sometimes VINs of vehicles under
 # negotiation — none of that belongs in a public fork.
 scripts/tests/fixtures/*.html
+
+# Real JSON API responses from MBUSA inventory endpoints, captured
+# locally for parser-design work. Same dealer-data reasoning as above.
+scripts/tests/fixtures/*.json
