@@ -181,20 +181,169 @@ class TestCarGurusMetadata(unittest.TestCase):
 
 
 class TestCarsComMetadata(unittest.TestCase):
-    def test_extracts_price_mileage_badge(self):
-        body = (
-            "VIN 4JGFF8FE2SB431338\n"
-            "$104,327\n"
-            "7,487 miles\n"
-            "Fair Deal\n"
-            "https://www.cars.com/vehicledetail/12345/"
+    """Per-vehicle block parsing for Cars.com saved-search alerts.
+
+    The cars.com price-drop and new-listing email templates use a
+    repeating block per vehicle: title line, listing URL, mileage,
+    optional price-drop delta, ask price, then a duplicate of the URL
+    as a "View details" link. The block-detection algorithm groups by
+    the per-vehicle URL UUID, so the duplicate URL doesn't cause
+    duplicate candidates.
+
+    These tests build synthetic bodies that mirror that structure. Real
+    .eml samples live in scripts/tests/fixtures/ (gitignored).
+    """
+
+    @staticmethod
+    def _block(uuid: str, year: str, trim: str, mileage_str: str,
+               price: str, price_drop: str | None = None) -> str:
+        """Build one vehicle block matching the cars.com template."""
+        delta_line = f"↓ {price_drop} price drop \n\n\n" if price_drop else ""
+        url = f"https://www.cars.com/vehicledetail/{uuid}?aff=acqem100"
+        return (
+            f"\n {year} Mercedes-Benz GLS {trim} 4MATIC  \n"
+            f"<{url}>\n"
+            f" {mileage_str} \n"
+            f"{delta_line}"
+            f" {price} \n"
+            f"View details about this car ↗ \n"
+            f"<{url}>\n"
         )
-        msg_bytes = _build_email("noreply@cars.com", "alert", body)
-        candidates = parse(msg_bytes)
+
+    def test_single_vehicle_block_extracts_full_metadata(self):
+        body = self._block("12345abc", "2024", "580", "13,872 mi.",
+                           "$87,495", price_drop="$1,245")
+        msg = _build_email("noreply@cars.com", "Price drop!", body)
+        candidates = parse(msg)
+        self.assertEqual(len(candidates), 1)
+        c = candidates[0]
+        # VIN is None pre-hydration — the next commit populates it.
+        self.assertIsNone(c["vin"])
+        self.assertIn("vehicledetail/12345abc", c["listing_url"])
+        self.assertEqual(c["provider"], "cars_com")
+        self.assertEqual(c["parser"], "cars_com")
+        md = c["raw_metadata"]
+        self.assertEqual(md["year"], 2024)
+        self.assertEqual(md["trim_number"], "580")
+        self.assertEqual(md["drivetrain"], "4MATIC")
+        self.assertEqual(md["mileage"], 13872)
+        self.assertEqual(md["price"], 87495)
+        self.assertEqual(md["price_drop_delta"], 1245)
+
+    def test_three_vehicle_blocks_emit_three_candidates(self):
+        # Use real-format hex GUIDs matching observed cars.com URLs.
+        body = (
+            self._block("5b475d0d-b34a-40b6-b372-83469b4b7655", "2024",
+                        "450", "38,099 mi.", "$59,397", price_drop="$1,245") +
+            self._block("b2cc612e-a40b-4073-a457-4facb2d82a6f", "2024",
+                        "450", "37,802 mi.", "$67,864", price_drop="$1,036") +
+            self._block("d092dc28-4909-4dca-ac69-855bdf8da7ea", "2024",
+                        "450", "25,619 mi.", "$71,999", price_drop="$498")
+        )
+        msg = _build_email("noreply@cars.com", "Price drop!", body)
+        candidates = parse(msg)
+        self.assertEqual(len(candidates), 3)
+        # Order preserved from email
+        uuids = [c["listing_url"].split("/vehicledetail/")[1].split("?")[0]
+                 for c in candidates]
+        self.assertEqual(uuids, [
+            "5b475d0d-b34a-40b6-b372-83469b4b7655",
+            "b2cc612e-a40b-4073-a457-4facb2d82a6f",
+            "d092dc28-4909-4dca-ac69-855bdf8da7ea",
+        ])
+        # Prices distinct and in order
+        prices = [c["raw_metadata"]["price"] for c in candidates]
+        self.assertEqual(prices, [59397, 67864, 71999])
+
+    def test_duplicate_url_per_vehicle_does_not_double_emit(self):
+        """Each vehicle's URL appears twice (top + 'View details'). The
+        block algorithm groups by UUID and emits one candidate per UUID."""
+        body = self._block("dup-uuid", "2025", "580", "5,000 mi.", "$104,327")
+        # _block already includes the duplicate URL. Sanity-check assumption:
+        self.assertEqual(body.count("vehicledetail/dup-uuid"), 2)
+        msg = _build_email("noreply@cars.com", "alert", body)
+        candidates = parse(msg)
+        self.assertEqual(len(candidates), 1)
+
+    def test_mileage_mi_abbreviation_with_period(self):
+        body = self._block("a", "2024", "450", "38,099 mi.", "$59,397")
+        candidates = parse(_build_email("noreply@cars.com", "alert", body))
+        self.assertEqual(candidates[0]["raw_metadata"]["mileage"], 38099)
+
+    def test_mileage_mi_abbreviation_no_period(self):
+        body = self._block("a", "2024", "450", "38,099 mi", "$59,397")
+        candidates = parse(_build_email("noreply@cars.com", "alert", body))
+        self.assertEqual(candidates[0]["raw_metadata"]["mileage"], 38099)
+
+    def test_mileage_full_word_still_works(self):
+        body = self._block("a", "2024", "450", "38,099 miles", "$59,397")
+        candidates = parse(_build_email("noreply@cars.com", "alert", body))
+        self.assertEqual(candidates[0]["raw_metadata"]["mileage"], 38099)
+
+    def test_mileage_does_not_match_inside_word(self):
+        # "milestones" should NOT be parsed as a mileage value.
+        body = self._block("a", "2024", "450", "0000 milestones", "$59,397")
+        candidates = parse(_build_email("noreply@cars.com", "alert", body))
+        self.assertNotIn("mileage", candidates[0]["raw_metadata"])
+
+    def test_ask_price_wins_over_price_drop_delta(self):
+        # Body has $1,245 (delta) and $59,397 (ask). Ask must win.
+        body = self._block("a", "2024", "450", "38,099 mi.",
+                           "$59,397", price_drop="$1,245")
+        candidates = parse(_build_email("noreply@cars.com", "alert", body))
         md = candidates[0]["raw_metadata"]
-        self.assertEqual(md.get("price"), 104327)
-        self.assertEqual(md.get("mileage"), 7487)
-        self.assertEqual(md.get("deal_badge"), "Fair Deal")
+        self.assertEqual(md["price"], 59397)
+        self.assertEqual(md["price_drop_delta"], 1245)
+
+    def test_block_without_price_drop_still_parses(self):
+        # New-listing alerts don't have a price-drop line.
+        body = self._block("a", "2024", "580", "5,000 mi.", "$104,327")
+        candidates = parse(_build_email("noreply@cars.com", "alert", body))
+        md = candidates[0]["raw_metadata"]
+        self.assertEqual(md["price"], 104327)
+        self.assertNotIn("price_drop_delta", md)
+
+    def test_emits_vin_none_pre_hydration(self):
+        """This commit's contract: every per-vehicle candidate has
+        vin=None. Hydration in the next commit populates it from the
+        listing URL. Until then, ingest.py warn-drops these (intentional
+        bridge-state behavior)."""
+        body = self._block("a", "2024", "580", "5,000 mi.", "$104,327")
+        candidates = parse(_build_email("noreply@cars.com", "alert", body))
+        self.assertTrue(all(c["vin"] is None for c in candidates))
+
+    def test_no_vehicledetail_urls_falls_back_to_regex(self):
+        """Non-standard cars.com formats (account notices, weekly
+        digests) shouldn't be silently dropped — fallback parser still
+        runs and tags candidates with provider=cars_com."""
+        body = (
+            "Your saved search summary: VIN 4JGFF8FE2SB431338 was "
+            "viewed by 12 people. https://www.cars.com/account/"
+        )
+        candidates = parse(_build_email("noreply@cars.com", "summary", body))
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0]["provider"], "cars_com")
+        self.assertTrue(candidates[0].get("parser_fallback"))
+        self.assertEqual(candidates[0]["vin"], "4JGFF8FE2SB431338")
+
+    def test_email_with_no_text_plain_falls_back(self):
+        """HTML-only cars.com emails are rare but possible. Defer to
+        fallback so they're not silently dropped."""
+        html = (
+            "<html><body>"
+            "<p>VIN <b>4JGFF8FE2SB431338</b> at "
+            "<a href='https://www.cars.com/vehicledetail/abc'>this listing</a></p>"
+            "</body></html>"
+        )
+        # _build_email with html and EMPTY text body still creates text/plain;
+        # to truly omit text/plain we have to build the message differently.
+        msg = EmailMessage()
+        msg["From"] = "noreply@cars.com"
+        msg["Subject"] = "alert"
+        msg.set_content(html, subtype="html")
+        candidates = parse(bytes(msg))
+        self.assertGreaterEqual(len(candidates), 1)
+        self.assertEqual(candidates[0]["provider"], "cars_com")
 
 
 # ---- parser-failure fallback ----
