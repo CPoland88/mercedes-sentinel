@@ -11,15 +11,10 @@ and (likely) new-listing alerts. Each vehicle in the email body has:
   - Ask price:    "$N"
 
 The email body contains NO VINs — Cars.com strips them from alerts and
-keeps them behind the vehicledetail URL. Hydration to fetch VIN, dealer,
-color, packages, and CPO from the listing page lands in the next commit
-(see scripts/hydrate.py for the helper).
-
-This commit emits per-block candidates with `vin=None`. ingest.py will
-warn-and-drop them (its VIN check is unchanged), which is intentional:
-this is the bridge state between the pre-existing stub parser (which
-returned [] on every cars.com alert) and the hydrated version (next
-commit, which will populate `vin` from the hydrated listing page).
+keeps them behind the vehicledetail URL. After per-vehicle blocks are
+extracted from the email, each candidate's listing URL is fetched via
+scripts.hydrate to populate VIN, dealer, exterior color, packages, and
+CPO badge from the listing page's Schema.org JSON-LD.
 
 Block-detection algorithm:
 
@@ -32,6 +27,14 @@ Block-detection algorithm:
      defines the block.
   3. Extract mileage, price, and price-drop delta from inside the
      block, isolated from email-footer noise.
+  4. Hydrate each candidate's listing URL to fill VIN + dealer +
+     color + packages + CPO. Per-vehicle hydration failures are
+     isolated — one 4xx doesn't kill the other vehicles in the batch.
+
+Field precedence: the email is authoritative for price/mileage/delta
+(the listing page may show a fresh price drop after email send, and
+the dedup gate needs to compare against what the email actually said).
+Hydration fills gaps but does not overwrite email-derived fields.
 
 Falls back to `parsers.fallback` when no `vehicledetail/` URLs are
 present — for non-standard Cars.com formats (weekly market reports,
@@ -40,11 +43,15 @@ in the body so the alert doesn't get silently dropped.
 """
 from __future__ import annotations
 
+import logging
 import re
 from email.message import Message
 from typing import List, Optional
 
 from . import fallback
+from .. import hydrate
+
+logger = logging.getLogger(__name__)
 
 
 # ---- Patterns ----
@@ -186,12 +193,53 @@ def _build_candidate(
         metadata["deal_badge"] = badge_match.group(1)
 
     return {
-        "vin": None,  # Populated by hydration in the next commit.
+        "vin": None,  # Filled in by _try_hydrate after the candidate is built.
         "listing_url": listing_url,
         "provider": "cars_com",
         "parser": "cars_com",
         "raw_metadata": metadata,
     }
+
+
+def _try_hydrate(candidate: dict) -> None:
+    """Fetch the listing page via scripts.hydrate and merge VIN +
+    dealer + color + packages + CPO into the candidate.
+
+    Mutates `candidate` in place. On hydration failure (4xx, network
+    down, retried 5xx), leaves vin=None and annotates raw_metadata with
+    `hydration_error` so the failure is visible downstream rather than
+    silent. The candidate still gets emitted — ingest.py's existing
+    VIN check will warn-drop it, but the email isn't lost from the
+    pipeline's audit trail.
+
+    Field precedence: the email is authoritative for price/mileage/
+    delta (the listing page might show a fresh price drop after the
+    email was sent, and the dedup gate needs to compare against what
+    the email actually said). Hydration fills gaps via setdefault; it
+    does not overwrite.
+    """
+    url = candidate["listing_url"]
+    try:
+        hydrated = hydrate.hydrate_cars_com(url)
+    except hydrate.HydrationError as e:
+        logger.warning("Hydration failed for %s: %s", url, e)
+        candidate["raw_metadata"]["hydration_error"] = str(e)
+        return
+    except Exception as e:
+        # Defense in depth — an unexpected parser/HTML bug shouldn't
+        # crash the ingest run. Log and continue.
+        logger.exception("Unexpected hydration error for %s: %s", url, e)
+        candidate["raw_metadata"]["hydration_error"] = f"unexpected: {e}"
+        return
+
+    if hydrated.vin:
+        candidate["vin"] = hydrated.vin
+
+    md = candidate["raw_metadata"]
+    for k, v in hydrated.to_dict().items():
+        if k == "vin":
+            continue  # Already promoted to the candidate's vin field.
+        md.setdefault(k, v)
 
 
 def _fallback_with_provider_tag(msg: Message) -> List[dict]:
@@ -240,5 +288,15 @@ def parse(msg: Message) -> List[dict]:
         block = body[title_match.start():last_url_match.end()]
         listing_url = first_url_match.group(0)
         candidates.append(_build_candidate(title_match, listing_url, block))
+
+    # Hydration pass — follow each listing URL to fetch VIN + dealer +
+    # color + packages + CPO. One request per listing URL, paced by the
+    # HttpxFetcher's jitter (1.5-3s). For an N-vehicle batch this adds
+    # ~(N-1) * 2s of latency, which is the cost of getting fields the
+    # email body strips. Per-vehicle failures are isolated.
+    if candidates:
+        logger.info("Hydrating %d cars.com listing(s)", len(candidates))
+        for c in candidates:
+            _try_hydrate(c)
 
     return candidates

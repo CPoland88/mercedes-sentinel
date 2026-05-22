@@ -5,13 +5,22 @@ fixtures so the test suite has no external dependencies. Real .eml
 samples from your actual Gmail inbox should be added under
 scripts/tests/fixtures/ (gitignored — they may contain dealer-specific
 data you don't want public) and exercised via the --fixtures CLI flag.
+
+Cars.com tests patch scripts.hydrate.hydrate_cars_com so the parser's
+hydration pass doesn't try to reach cars.com from the test runner.
+TestCarsComMetadata patches it to a no-op (empty HydratedListing) in
+setUp so its tests focus on block-detection + metadata extraction.
+TestCarsComHydration uses per-test patches to exercise the hydration
+integration explicitly.
 """
 from __future__ import annotations
 
 import email
 import unittest
 from email.message import EmailMessage
+from unittest.mock import patch
 
+from .. import hydrate
 from ..parsers import detect_provider, fallback, parse
 
 
@@ -180,6 +189,28 @@ class TestCarGurusMetadata(unittest.TestCase):
         self.assertEqual(md.get("deal_badge"), "Great Deal")
 
 
+def _cars_com_block(uuid: str, year: str, trim: str, mileage_str: str,
+                    price: str, price_drop: str | None = None) -> str:
+    """Build one vehicle block matching the cars.com email template.
+
+    Shared by TestCarsComMetadata and TestCarsComHydration. The wire
+    format mirrors what we observed in real price-drop alerts: title,
+    URL (with angle brackets), mileage, optional '↓ $N price drop'
+    line, ask price, 'View details' line, duplicate URL.
+    """
+    delta_line = f"↓ {price_drop} price drop \n\n\n" if price_drop else ""
+    url = f"https://www.cars.com/vehicledetail/{uuid}?aff=acqem100"
+    return (
+        f"\n {year} Mercedes-Benz GLS {trim} 4MATIC  \n"
+        f"<{url}>\n"
+        f" {mileage_str} \n"
+        f"{delta_line}"
+        f" {price} \n"
+        f"View details about this car ↗ \n"
+        f"<{url}>\n"
+    )
+
+
 class TestCarsComMetadata(unittest.TestCase):
     """Per-vehicle block parsing for Cars.com saved-search alerts.
 
@@ -190,25 +221,26 @@ class TestCarsComMetadata(unittest.TestCase):
     the per-vehicle URL UUID, so the duplicate URL doesn't cause
     duplicate candidates.
 
-    These tests build synthetic bodies that mirror that structure. Real
-    .eml samples live in scripts/tests/fixtures/ (gitignored).
+    Each test patches scripts.hydrate.hydrate_cars_com to return an
+    empty HydratedListing — the parser's hydration pass becomes a
+    no-op, leaving vin=None and adding no merged fields. Hydration-
+    specific behavior is exercised in TestCarsComHydration.
+
+    These tests build synthetic bodies that mirror the real template.
+    Real .eml samples live in scripts/tests/fixtures/ (gitignored).
     """
 
-    @staticmethod
-    def _block(uuid: str, year: str, trim: str, mileage_str: str,
-               price: str, price_drop: str | None = None) -> str:
-        """Build one vehicle block matching the cars.com template."""
-        delta_line = f"↓ {price_drop} price drop \n\n\n" if price_drop else ""
-        url = f"https://www.cars.com/vehicledetail/{uuid}?aff=acqem100"
-        return (
-            f"\n {year} Mercedes-Benz GLS {trim} 4MATIC  \n"
-            f"<{url}>\n"
-            f" {mileage_str} \n"
-            f"{delta_line}"
-            f" {price} \n"
-            f"View details about this car ↗ \n"
-            f"<{url}>\n"
+    def setUp(self):
+        self._hydrate_patcher = patch.object(
+            hydrate, "hydrate_cars_com",
+            return_value=hydrate.HydratedListing(),
         )
+        self._hydrate_patcher.start()
+
+    def tearDown(self):
+        self._hydrate_patcher.stop()
+
+    _block = staticmethod(_cars_com_block)
 
     def test_single_vehicle_block_extracts_full_metadata(self):
         body = self._block("12345abc", "2024", "580", "13,872 mi.",
@@ -303,11 +335,11 @@ class TestCarsComMetadata(unittest.TestCase):
         self.assertEqual(md["price"], 104327)
         self.assertNotIn("price_drop_delta", md)
 
-    def test_emits_vin_none_pre_hydration(self):
-        """This commit's contract: every per-vehicle candidate has
-        vin=None. Hydration in the next commit populates it from the
-        listing URL. Until then, ingest.py warn-drops these (intentional
-        bridge-state behavior)."""
+    def test_vin_stays_none_when_hydration_returns_no_vin(self):
+        """When hydration returns an empty HydratedListing (mocked here),
+        the candidate's vin stays None. ingest.py will warn-drop it
+        downstream, which is the right behavior for an unfetchable
+        listing — better than a silent drop at the parser layer."""
         body = self._block("a", "2024", "580", "5,000 mi.", "$104,327")
         candidates = parse(_build_email("noreply@cars.com", "alert", body))
         self.assertTrue(all(c["vin"] is None for c in candidates))
@@ -369,6 +401,169 @@ class TestProviderFailureFallback(unittest.TestCase):
         # Tagged with detected provider even though regex did the work
         self.assertEqual(candidates[0]["provider"], "cargurus")
         self.assertTrue(candidates[0].get("parser_fallback"))
+
+
+class TestCarsComHydration(unittest.TestCase):
+    """Tests for the hydration integration in cars_com.parse.
+
+    The parser, after building per-vehicle candidates from the email,
+    calls scripts.hydrate.hydrate_cars_com per listing URL to fill in
+    VIN + dealer + color + packages + CPO. These tests mock the
+    hydration call per-test so we can assert on the merge behavior
+    without touching the network.
+    """
+
+    def test_hydration_populates_vin_on_candidate(self):
+        body = _cars_com_block(
+            "5b475d0d-b34a-40b6-b372-83469b4b7655",
+            "2024", "450", "38,099 mi.", "$59,397",
+        )
+        msg = _build_email("noreply@cars.com", "alert", body)
+        listing = hydrate.HydratedListing(vin="4JGFF5KE0SB288880")
+        with patch.object(hydrate, "hydrate_cars_com", return_value=listing) as m:
+            candidates = parse(msg)
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0]["vin"], "4JGFF5KE0SB288880")
+        m.assert_called_once()
+
+    def test_hydration_merges_dealer_color_packages_into_metadata(self):
+        body = _cars_com_block(
+            "5b475d0d-b34a-40b6-b372-83469b4b7655",
+            "2024", "580", "13,872 mi.", "$87,495",
+        )
+        msg = _build_email("noreply@cars.com", "alert", body)
+        listing = hydrate.HydratedListing(
+            vin="4JGFF8FE2SB431338",
+            dealer_name="MB of Tysons Corner",
+            dealer_city="Vienna",
+            dealer_state="VA",
+            exterior_color="Emerald Green Metallic",
+            packages=["Pinnacle Trim", "Acoustic Comfort Package"],
+            cpo_badge="Certified Pre-Owned",
+        )
+        with patch.object(hydrate, "hydrate_cars_com", return_value=listing):
+            candidates = parse(msg)
+        md = candidates[0]["raw_metadata"]
+        self.assertEqual(md["dealer_name"], "MB of Tysons Corner")
+        self.assertEqual(md["dealer_city"], "Vienna")
+        self.assertEqual(md["dealer_state"], "VA")
+        self.assertEqual(md["exterior_color"], "Emerald Green Metallic")
+        self.assertEqual(md["packages"], ["Pinnacle Trim", "Acoustic Comfort Package"])
+        self.assertEqual(md["cpo_badge"], "Certified Pre-Owned")
+        # VIN gets promoted to candidate, not also in raw_metadata
+        self.assertNotIn("vin", md)
+        self.assertEqual(candidates[0]["vin"], "4JGFF8FE2SB431338")
+
+    def test_email_fields_take_precedence_over_hydration(self):
+        """Email is authoritative for price/mileage/delta. Even if
+        hydration tries to return conflicting values for those fields
+        (it currently doesn't, but the precedence rule must hold for
+        future HydratedListing growth), the email wins."""
+        body = _cars_com_block(
+            "5b475d0d-b34a-40b6-b372-83469b4b7655",
+            "2024", "450", "38,099 mi.", "$59,397", price_drop="$1,245",
+        )
+        msg = _build_email("noreply@cars.com", "alert", body)
+        # Synthesize a HydratedListing that would (hypothetically) collide
+        # on a year field — confirm the email's year wins via setdefault.
+        listing = hydrate.HydratedListing(
+            vin="4JGFF5KE0SB288880",
+            model_year=2026,  # Conflicts with email's "2024"
+        )
+        with patch.object(hydrate, "hydrate_cars_com", return_value=listing):
+            candidates = parse(msg)
+        md = candidates[0]["raw_metadata"]
+        # Email's year wins
+        self.assertEqual(md["year"], 2024)
+        # But hydrated model_year still lands under its own key (it's not
+        # a conflict — different field names, setdefault adds it)
+        self.assertEqual(md.get("model_year"), 2026)
+        # Email's price stays untouched
+        self.assertEqual(md["price"], 59397)
+        self.assertEqual(md["price_drop_delta"], 1245)
+
+    def test_hydration_failure_annotates_error_and_leaves_vin_none(self):
+        body = _cars_com_block(
+            "5b475d0d-b34a-40b6-b372-83469b4b7655",
+            "2024", "450", "38,099 mi.", "$59,397",
+        )
+        msg = _build_email("noreply@cars.com", "alert", body)
+        with patch.object(
+            hydrate, "hydrate_cars_com",
+            side_effect=hydrate.HydrationError("4xx fetching ... 404 Not Found"),
+        ):
+            candidates = parse(msg)
+        self.assertEqual(len(candidates), 1)
+        self.assertIsNone(candidates[0]["vin"])
+        self.assertIn("hydration_error", candidates[0]["raw_metadata"])
+        self.assertIn("404", candidates[0]["raw_metadata"]["hydration_error"])
+
+    def test_one_failure_does_not_kill_other_vehicles(self):
+        body = (
+            _cars_com_block("5b475d0d-b34a-40b6-b372-83469b4b7655",
+                            "2024", "450", "38,099 mi.", "$59,397") +
+            _cars_com_block("b2cc612e-a40b-4073-a457-4facb2d82a6f",
+                            "2024", "450", "37,802 mi.", "$67,864") +
+            _cars_com_block("d092dc28-4909-4dca-ac69-855bdf8da7ea",
+                            "2024", "450", "25,619 mi.", "$71,999")
+        )
+        msg = _build_email("noreply@cars.com", "alert", body)
+        # First call succeeds, second raises, third succeeds.
+        side_effects = [
+            hydrate.HydratedListing(vin="4JGFF5KE0SB288880"),
+            hydrate.HydrationError("503 after retry"),
+            hydrate.HydratedListing(vin="4JGFF8FE2SB431338"),
+        ]
+        with patch.object(hydrate, "hydrate_cars_com", side_effect=side_effects):
+            candidates = parse(msg)
+        self.assertEqual(len(candidates), 3)
+        self.assertEqual(candidates[0]["vin"], "4JGFF5KE0SB288880")
+        self.assertIsNone(candidates[1]["vin"])
+        self.assertIn("hydration_error", candidates[1]["raw_metadata"])
+        self.assertEqual(candidates[2]["vin"], "4JGFF8FE2SB431338")
+
+    def test_hydration_called_once_per_unique_vehicle(self):
+        """Each vehicle's URL appears twice in the email (top + 'View
+        details'). Hydration should run once per unique vehicle, not
+        once per URL occurrence."""
+        body = (
+            _cars_com_block("5b475d0d-b34a-40b6-b372-83469b4b7655",
+                            "2024", "450", "38,099 mi.", "$59,397") +
+            _cars_com_block("b2cc612e-a40b-4073-a457-4facb2d82a6f",
+                            "2024", "450", "37,802 mi.", "$67,864")
+        )
+        msg = _build_email("noreply@cars.com", "alert", body)
+        with patch.object(hydrate, "hydrate_cars_com",
+                          return_value=hydrate.HydratedListing()) as m:
+            parse(msg)
+        # Two vehicles, two hydration calls.
+        self.assertEqual(m.call_count, 2)
+        called_urls = [c.args[0] for c in m.call_args_list]
+        self.assertIn(
+            "https://www.cars.com/vehicledetail/5b475d0d-b34a-40b6-b372-83469b4b7655?aff=acqem100",
+            called_urls,
+        )
+        self.assertIn(
+            "https://www.cars.com/vehicledetail/b2cc612e-a40b-4073-a457-4facb2d82a6f?aff=acqem100",
+            called_urls,
+        )
+
+    def test_unexpected_exception_does_not_crash_run(self):
+        """Defense-in-depth: an unexpected error during hydration
+        (e.g. an HTML parse bug) should be caught and annotated, not
+        propagate out and kill the ingest run."""
+        body = _cars_com_block(
+            "5b475d0d-b34a-40b6-b372-83469b4b7655",
+            "2024", "450", "38,099 mi.", "$59,397",
+        )
+        msg = _build_email("noreply@cars.com", "alert", body)
+        with patch.object(hydrate, "hydrate_cars_com",
+                          side_effect=ValueError("unexpected parser bug")):
+            candidates = parse(msg)
+        self.assertEqual(len(candidates), 1)
+        self.assertIsNone(candidates[0]["vin"])
+        self.assertIn("hydration_error", candidates[0]["raw_metadata"])
+        self.assertIn("unexpected", candidates[0]["raw_metadata"]["hydration_error"])
 
 
 if __name__ == "__main__":
