@@ -16,6 +16,10 @@ hydration":
     are headers a real Chrome sends automatically on every navigation.
     Required to clear Cloudflare's first-tier bot-check, which 403s
     UA-only spoofs with `Cf-Mitigated: challenge`.
+  - HTTP/2 via ALPN. Real Chrome speaks HTTP/2 to any host that
+    negotiates it; the version mismatch (httpx defaults to HTTP/1.1)
+    is itself a Cloudflare fingerprint signal. Falls back to HTTP/1.1
+    automatically when the server doesn't support HTTP/2.
   - 1.5-3s jitter between requests (no rate-limited fan-out).
   - One request per email-referenced URL, never enumerate, never crawl,
     never parallelize.
@@ -169,11 +173,17 @@ class HttpxFetcher:
         jitter_min: float = JITTER_MIN_S,
         jitter_max: float = JITTER_MAX_S,
         client: Optional[httpx.Client] = None,
+        http2: bool = True,
     ):
+        # http2=True relies on ALPN — if the server doesn't negotiate
+        # HTTP/2 we fall back to HTTP/1.1 automatically. Cars.com (and
+        # most Cloudflare-fronted sites) negotiates HTTP/2 happily.
+        # Set http2=False only for tests that don't want to install h2.
         self._client = client or httpx.Client(
             headers=headers if headers is not None else DEFAULT_HEADERS,
             timeout=timeout,
             follow_redirects=True,
+            http2=http2,
         )
         self._jitter_min = jitter_min
         self._jitter_max = jitter_max
