@@ -48,3 +48,10 @@ data/triaged.json
 # Synthetic in-memory tests live in scripts/tests/test_*.py and are
 # tracked. See scripts/tests/fixtures/README.md.
 scripts/tests/fixtures/*.eml
+
+# Real HTML snapshots from cars.com / autotrader / cargurus listing
+# pages, captured locally for selector debugging in scripts/hydrate.py.
+# Same reasoning as the .eml exclusion: these pages contain dealer
+# names, sales-rep contacts, sometimes VINs of vehicles under
+# negotiation — none of that belongs in a public fork.
+scripts/tests/fixtures/*.html
