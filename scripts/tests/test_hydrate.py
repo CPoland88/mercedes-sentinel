@@ -362,5 +362,64 @@ class TestHttpxFetcher(unittest.TestCase):
             self.assertEqual(mock_sleep.call_args[0][0], 5.0)
 
 
+class TestDefaultHeaders(unittest.TestCase):
+    """Regression guards on the headers we send to clear Cloudflare's
+    first-tier bot-check. If any of these drop out of DEFAULT_HEADERS,
+    cars.com will start returning 403 + `Cf-Mitigated: challenge` and
+    every hydration will fail."""
+
+    def test_default_headers_include_client_hints(self):
+        # The four Sec-Ch-Ua* and Sec-Fetch-* headers Cloudflare's
+        # Accept-Ch response asked us for.
+        for header in (
+            "Sec-Ch-Ua",
+            "Sec-Ch-Ua-Mobile",
+            "Sec-Ch-Ua-Platform",
+            "Sec-Fetch-Dest",
+            "Sec-Fetch-Mode",
+            "Sec-Fetch-Site",
+            "Sec-Fetch-User",
+        ):
+            self.assertIn(header, hydrate.DEFAULT_HEADERS,
+                          f"Missing required header: {header}")
+
+    def test_user_agent_and_client_hints_agree_on_browser(self):
+        # If the UA claims Chrome on macOS, the Client Hints must match
+        # — Cloudflare specifically cross-checks these.
+        ua = hydrate.DEFAULT_HEADERS["User-Agent"]
+        sec_ch_ua = hydrate.DEFAULT_HEADERS["Sec-Ch-Ua"]
+        sec_ch_platform = hydrate.DEFAULT_HEADERS["Sec-Ch-Ua-Platform"]
+        self.assertIn("Chrome", ua)
+        self.assertIn("Macintosh", ua)
+        self.assertIn("Chrome", sec_ch_ua)
+        self.assertEqual(sec_ch_platform, '"macOS"')
+
+    def test_navigation_intent_headers_set(self):
+        # Real top-level navigation sends these. Missing them is a
+        # fingerprint Cloudflare uses to flag fetch-API-style scrapers.
+        self.assertEqual(
+            hydrate.DEFAULT_HEADERS.get("Sec-Fetch-Mode"), "navigate"
+        )
+        self.assertEqual(
+            hydrate.DEFAULT_HEADERS.get("Sec-Fetch-Dest"), "document"
+        )
+        self.assertEqual(
+            hydrate.DEFAULT_HEADERS.get("Upgrade-Insecure-Requests"), "1"
+        )
+
+    def test_httpxfetcher_default_client_carries_default_headers(self):
+        # Construct without overriding headers and assert the underlying
+        # httpx.Client got the full set.
+        f = HttpxFetcher()
+        try:
+            self.assertIn("sec-ch-ua", f._client.headers)
+            self.assertEqual(
+                f._client.headers["sec-ch-ua-platform"], '"macOS"'
+            )
+            self.assertIn("Chrome", f._client.headers["user-agent"])
+        finally:
+            f.close()
+
+
 if __name__ == "__main__":
     unittest.main()

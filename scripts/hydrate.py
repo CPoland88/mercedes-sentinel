@@ -11,7 +11,11 @@ This is the only network operation in the ingest pipeline beyond IMAP
 polling. Posture is explicitly scoped by WORKSPACE.md "Carve-out for
 hydration":
 
-  - Realistic User-Agent (current stable Chrome on macOS).
+  - Full browser-like request signature: Chrome 126 on macOS UA plus
+    matching Client Hints (Sec-Ch-Ua*, Sec-Fetch-*, Accept) — these
+    are headers a real Chrome sends automatically on every navigation.
+    Required to clear Cloudflare's first-tier bot-check, which 403s
+    UA-only spoofs with `Cf-Mitigated: challenge`.
   - 1.5-3s jitter between requests (no rate-limited fan-out).
   - One request per email-referenced URL, never enumerate, never crawl,
     never parallelize.
@@ -57,6 +61,42 @@ DEFAULT_USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/126.0.0.0 Safari/537.36"
 )
+
+# Full request-header signature for Chrome 126 on macOS performing a
+# top-level navigation. Cars.com sits behind Cloudflare, which checks
+# Client Hints (Sec-Ch-Ua*, Sec-Fetch-*, Accept) for consistency with
+# the declared User-Agent — a UA-only spoof fails the first-tier check
+# with a 403 + `Cf-Mitigated: challenge` header. These headers are
+# protocol-standard; a real Chrome sends them on every navigation. We
+# send them too so a same-origin GET from this script looks the same
+# at the transport layer as a same-origin GET from your browser.
+#
+# Posture is still WORKSPACE.md carve-out: still one request per
+# email-referenced URL, still no JS rendering, still no headless
+# browser, still polite jitter. Just thorough on the headers a real
+# browser already sends automatically.
+DEFAULT_HEADERS = {
+    "User-Agent": DEFAULT_USER_AGENT,
+    "Accept": (
+        "text/html,application/xhtml+xml,application/xml;q=0.9,"
+        "image/avif,image/webp,image/apng,*/*;q=0.8,"
+        "application/signed-exchange;v=b3;q=0.7"
+    ),
+    "Accept-Language": "en-US,en;q=0.9",
+    "Cache-Control": "max-age=0",
+    "Priority": "u=0, i",
+    "Sec-Ch-Ua": '"Google Chrome";v="126", "Not-A.Brand";v="8", "Chromium";v="126"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"macOS"',
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    # `none` matches "user opened this URL fresh" — consistent with
+    # an empty Referer (real browsers don't send a referer when the
+    # nav came from outside the browser, like an email-app handoff).
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
+}
 
 DEFAULT_TIMEOUT = httpx.Timeout(connect=15.0, read=30.0, write=15.0, pool=15.0)
 
@@ -124,14 +164,14 @@ class HttpxFetcher:
 
     def __init__(
         self,
-        user_agent: str = DEFAULT_USER_AGENT,
+        headers: Optional[dict] = None,
         timeout: httpx.Timeout = DEFAULT_TIMEOUT,
         jitter_min: float = JITTER_MIN_S,
         jitter_max: float = JITTER_MAX_S,
         client: Optional[httpx.Client] = None,
     ):
         self._client = client or httpx.Client(
-            headers={"User-Agent": user_agent},
+            headers=headers if headers is not None else DEFAULT_HEADERS,
             timeout=timeout,
             follow_redirects=True,
         )
