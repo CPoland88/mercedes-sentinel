@@ -348,30 +348,75 @@ def fetch_matching_inventory(
     try:
         candidates: List[MbusaCandidate] = []
         min_year, max_year = year_range
-        base_params = {
-            "count": page_size,
-            "distance": distance,
-            "exterior": ",".join(color_codes),
-            "invType": inv_type,
-            "maxYear": max_year,
-            "minYear": min_year,
-            "model": ",".join(model_codes),
-            "resvOnly": "false",
-            "sortBy": "distance-asc",
-            "withFilters": "true",
-            "zip": zip_code,
-        }
-        if class_id:
-            base_params["class"] = class_id
+        exterior_csv = ",".join(color_codes)
+        model_csv = ",".join(model_codes)
 
         start = 0
         for page_index in range(MAX_PAGES):
             if page_index > 0:
                 _jittered_sleep()
 
-            params = dict(base_params, start=start)
-            url = f"{BASE_URL}?{urlencode(params)}"
-            payload = _get_with_retry(client, url)
+            # Param order MUST match the MBUSA SPA exactly. The endpoint
+            # sits behind Akamai with a cache key that includes the raw
+            # querystring (not a normalized form), so a reordered set
+            # of params is a different cache entry. Empirically, the
+            # SPA's order is cache-hot and serves 200s in ~150ms; any
+            # other order is cache-cold and origin-fetches, which in
+            # practice 503s.
+            #
+            # Order observed from the SPA's network capture:
+            #   count, distance, exterior, invType, maxYear, minYear,
+            #   model, resvOnly, sortBy, start, withFilters, zip, class
+            #
+            # Do not reorder without verifying against a fresh SPA
+            # capture in scripts/dev_capture_api.py.
+            params: list[tuple[str, object]] = [
+                ("count", page_size),
+                ("distance", distance),
+                ("exterior", exterior_csv),
+                ("invType", inv_type),
+                ("maxYear", max_year),
+                ("minYear", min_year),
+                ("model", model_csv),
+                ("resvOnly", "false"),
+                ("sortBy", "distance-asc"),
+                ("start", start),
+                ("withFilters", "true"),
+                ("zip", zip_code),
+            ]
+            if class_id:
+                params.append(("class", class_id))
+
+            # safe=',' keeps commas literal (matches the SPA wire
+            # format) rather than percent-encoded as %2C.
+            url = f"{BASE_URL}?{urlencode(params, safe=',')}"
+
+            # Tolerant pagination: page-1 failures are real (something
+            # genuinely broken — auth, headers, schema, full outage)
+            # and must raise. Failures on later pages are treated as
+            # "no more data right now" — we log and return what we
+            # already have. This handles the partially-cold-cache
+            # scenario observed during MBUSA's 2026-05-23 backend
+            # outage: Akamai served stale 200s on hot cache keys
+            # (page 1) but 503'd on cold ones (pages 2+). Without
+            # tolerance, a healthy page 1 + degraded page 2 would
+            # lose every page-1 record. Distance-asc sort means the
+            # records we DO get are the closest, which for our
+            # 250-mi geo filter is almost always sufficient.
+            try:
+                payload = _get_with_retry(client, url)
+            except httpx.HTTPStatusError as exc:
+                if page_index == 0:
+                    raise
+                logger.warning(
+                    "MBUSA pagination stopped at page %d (start=%d) "
+                    "due to %s; returning %d candidates collected so far.",
+                    page_index,
+                    start,
+                    exc,
+                    len(candidates),
+                )
+                break
 
             paged = (payload.get("result") or {}).get("pagedVehicles") or {}
             records = paged.get("records") or []

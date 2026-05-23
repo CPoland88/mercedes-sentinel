@@ -312,6 +312,60 @@ class TestFetchMatchingInventoryMultiPage(unittest.TestCase):
         self.assertIn("start=12", second_url)
 
 
+class TestFetchMatchingInventoryTolerantPagination(unittest.TestCase):
+    """Page-1 5xx must still raise. Later-page 5xx must be tolerated
+    so we return what page 1 successfully fetched. Diagnosed during
+    MBUSA's 2026-05-23 partial outage: Akamai served 200s on hot
+    cache keys (page 1) while origin 503'd on cold ones (later pages)."""
+
+    def test_page_2_failure_returns_page_1_records(self):
+        page_one = _make_page(
+            [dict(_load_fixture(), vin=f"VINPAGE1{i:02d}") for i in range(12)],
+            total_count=20,
+            current_offset=0,
+        )
+        mock_client = MagicMock(spec=httpx.Client)
+        # Page 1 = 200; page 2 = 503 retried = 503 (exhausts retry).
+        mock_client.get.side_effect = [
+            _mock_response(200, page_one),
+            _mock_response(503, "origin 5xx"),
+            _mock_response(503, "still down"),
+        ]
+
+        with patch.object(mbusa_inventory, "_jittered_sleep"), \
+                patch.object(mbusa_inventory.time, "sleep"):
+            result = fetch_matching_inventory(
+                zip_code="22180",
+                model_codes=["GLS450W4", "GLS580W4"],
+                year_range=(2024, 2026),
+                color_codes=["BLU", "GRN"],
+                client=mock_client,
+            )
+
+        # 12 from page 1, none from page 2 (which failed gracefully).
+        self.assertEqual(len(result), 12)
+        self.assertTrue(all(c.vin.startswith("VINPAGE1") for c in result))
+
+    def test_page_1_failure_still_raises(self):
+        # Page 1 failure is treated as a real outage, not a soft pagination
+        # ceiling — we have no candidates at all so propagating is correct.
+        mock_client = MagicMock(spec=httpx.Client)
+        mock_client.get.side_effect = [
+            _mock_response(503, "origin 5xx"),
+            _mock_response(503, "still down"),
+        ]
+
+        with patch.object(mbusa_inventory.time, "sleep"):
+            with self.assertRaises(httpx.HTTPStatusError):
+                fetch_matching_inventory(
+                    zip_code="22180",
+                    model_codes=["GLS450W4"],
+                    year_range=(2024, 2026),
+                    color_codes=["BLU"],
+                    client=mock_client,
+                )
+
+
 class TestFetchMatchingInventoryEmpty(unittest.TestCase):
     """Empty result set: one HTTP call, empty list."""
 
@@ -360,6 +414,54 @@ class TestFetchMatchingInventoryQueryString(unittest.TestCase):
         self.assertIn("model=GLS450W4", self.url)
         self.assertNotIn("modelId=", self.url)
         self.assertNotIn("modelDesignation=", self.url)
+
+    def test_multi_value_params_use_literal_commas(self):
+        # MBUSA's SPA sends literal commas in `model` and `exterior`.
+        # Our URL builder uses `urlencode(safe=',')` to match. If the
+        # SPA's contract ever requires %2C encoding we'll see it as
+        # 503s in the wild and revisit.
+        self.assertIn("model=GLS450W4,GLS580W4", self.url)
+        self.assertIn("exterior=BLU,GRN", self.url)
+        self.assertNotIn("%2C", self.url)
+
+    def test_param_order_matches_spa(self):
+        # MBUSA's Akamai layer uses the raw querystring as cache key,
+        # so reordering params yields cache-cold origin fetches that
+        # 503. Diagnosed 2026-05-23 when `start` at end of querystring
+        # 503'd while the same params with `start` between `sortBy`
+        # and `withFilters` returned 200. Order below mirrors the
+        # SPA's own network capture — do not reorder without verifying
+        # the new order against a live SPA capture.
+        expected_order = [
+            "count=",
+            "distance=",
+            "exterior=",
+            "invType=",
+            "maxYear=",
+            "minYear=",
+            "model=",
+            "resvOnly=",
+            "sortBy=",
+            "start=",
+            "withFilters=",
+            "zip=",
+            "class=",
+        ]
+        positions = [self.url.index(token) for token in expected_order]
+        self.assertEqual(
+            positions,
+            sorted(positions),
+            "URL param order drifted from MBUSA SPA — see comment "
+            "above this assertion before relaxing it.",
+        )
+
+    def test_start_precedes_withFilters(self):
+        # The single most important ordering invariant: `start` must
+        # come before `withFilters`. This is the specific reorder
+        # that 503'd in the 2026-05-23 diagnostic.
+        self.assertLess(
+            self.url.index("start="), self.url.index("withFilters=")
+        )
 
     def test_uses_year_range_params(self):
         # ``minYear`` and ``maxYear`` — not ``year=2024,2025,2026``.

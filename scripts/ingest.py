@@ -181,8 +181,14 @@ def run_mbusa_poll(
       - ``mbusa_filtered_out``: difference between the two
     """
     # Year range is computed at call time so the launchd job picks up
-    # a new model-year window automatically without code changes.
-    max_year = datetime.now().year + 1
+    # a new model-year window automatically without code changes. We
+    # clamp `max_year` at the current calendar year — MBUSA's API
+    # responds 503 (nginx upstream rejection) when queried for a model
+    # year not yet present in its schema. The dynamic ceiling rolls
+    # forward in January each year, which lags MB's typical late-Q3
+    # model-year transition by a few months; new-MY CPO inventory is
+    # rare enough during that window that the cost is negligible.
+    max_year = datetime.now().year
 
     logger.info(
         "MBUSA poll: zip=%s models=%s years=%d-%d colors=%s invType=%s",

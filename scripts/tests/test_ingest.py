@@ -16,6 +16,7 @@ import json
 import logging
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -209,10 +210,12 @@ class TestRunMbusaPollCallSignature(TestRunMbusaPollBase):
         self.assertEqual(kwargs["class_id"], "GLS")
         self.assertEqual(kwargs["inv_type"], "cpo")
         self.assertEqual(kwargs["distance"], "ANY")
-        # min year is CONTEXT.md floor; max year is dynamic (current year + 1)
+        # min year is CONTEXT.md floor; max year is clamped at the
+        # current calendar year because MBUSA rejects future-year
+        # queries (see ingest.py comment for the diagnostic story).
         min_year, max_year = kwargs["year_range"]
         self.assertEqual(min_year, 2024)
-        self.assertGreaterEqual(max_year, 2027)
+        self.assertEqual(max_year, datetime.now().year)
 
 
 class TestRunMbusaPollFiltering(TestRunMbusaPollBase):
