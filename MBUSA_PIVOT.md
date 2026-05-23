@@ -238,10 +238,9 @@ The cars.com hydration commits themselves (`fa0ba15`, `9c8f84e`,
 above. They remain in git history as documentation of the path we
 walked.
 
-## Status — 2026-05-23
+## Status — 2026-05-23 — Complete
 
-**Architecturally complete.** Seven of eight planned commits landed on
-2026-05-23:
+**Pivot complete.** All eight planned commits landed on 2026-05-23:
 
 1. `7fca376` — this decision doc
 2. `10c2137` — `scripts/mbusa_inventory.py` API client (36 tests)
@@ -250,23 +249,77 @@ walked.
 5. `4720eba` — `parsers/cars_com.py` → EmailSignals, hydration dropped
 6. `ae77051` — `scripts/email_signal_matcher.py` + ingest integration (34 tests)
 7. `bb9aa90` — delete `scripts/hydrate.py`, `scripts/dev_capture_html.py`, `scripts/tests/test_hydrate.py`; retire WORKSPACE.md hydration carve-out
+8. *(this commit)* — live end-to-end verification + status update
 
-Net diff across all seven: roughly –1,000 lines. Suite at `bb9aa90`:
-**204 tests OK** (the 238 in `ae77051` minus the 34 in the deleted
-`test_hydrate.py`).
+Net diff across all seven code commits: roughly –1,000 lines. Suite:
+**204 tests OK** (was 238 at `ae77051` minus the 34 in the deleted
+`test_hydrate.py`). One housekeeping commit (`951c515`) tidied
+README, removed four unused imports, and committed
+`NEXT_VEHICLE_HANDOFF.md`.
 
-**Commit 8 — live end-to-end verification — is deferred** until
-MBUSA's inventory backend recovers. As of the morning of 2026-05-23
-their inventory pages render blank (likely Saturday maintenance);
-the API was working as recently as Friday night. The validation
-one-liner (`run_mbusa_poll` with `write_state=False`, captured
-candidates printed) is the gold-standard test; the fixture path
-(`scripts/ingest.py --fixtures scripts/tests/fixtures`) already
-passes cleanly against the local cars.com price-drop sample.
+### Live validation results — 2026-05-23 16:52 ET
 
-**Calibration anchor for the eventual live run:** the cars.com
-price-drop fixture carries a vehicle at 25,619 mi / $71,999 that is
-the same VIN MBUSA's coverage check found in inventory on
-2026-05-21 (`4JGFF5KEXRB219544`, Ray Catena of Freehold NJ). The
-first healthy live `--dry-run` should produce a matched EmailSignal
-attachment for that VIN. If it doesn't, the matcher regressed.
+After MBUSA's Saturday-morning inventory outage cleared, ran the
+synthetic end-to-end one-liner: `run_mbusa_poll` against live MBUSA,
+then `parse_email` against the local
+`scripts/tests/fixtures/cars_com_price_drop_2026-05-21.eml`, then
+`_attach_email_signals` to exercise the matcher.
+
+**MBUSA poll:**
+
+- Both pages returned HTTP 200 (`start=0` and `start=12`) — the
+  SPA-exact param order from commit `5aabd18` resolves the cache-cold
+  503 issue we hit at 8:52 ET this morning.
+- 12 records returned across the two pages.
+- 10 kept after CONTEXT.md hard-cap filters (≤250 mi straight-line,
+  ≤40k mi, year ≥2024). 2 dropped — likely the >250 mi ones.
+
+**EmailSignal extraction:**
+
+- 3 cars.com EmailSignals extracted from the .eml fixture (all 2024
+  GLS 450 4MATIC, all with price-drop deltas).
+- 0 regular candidates — the post-pivot parser emits signals only
+  for cars.com.
+
+**Matcher results:**
+
+- UUID `d092dc28-4909-4dca-ac69-855bdf8da7ea` (25,619 mi / $71,999) →
+  **matched VIN `4JGFF5KEXRB219544`** with score **0.000**. The
+  cars.com snapshot and MBUSA snapshot agree exactly on both mileage
+  and price. Calibration anchor confirmed.
+- UUID `5b475d0d-b34a-40b6-b372-83469b4b7655` (38,099 mi / $59,397) →
+  unmatched ("no candidate within mileage/price tolerance"). Correct
+  — no MBUSA candidate within ±500 mi / ±$2,000 of those values
+  (highest-mileage 2024 GLS 450 in MBUSA today is 27,898 mi).
+- UUID `b2cc612e-a40b-4073-a457-4facb2d82a6f` (37,802 mi / $67,864) →
+  unmatched. Same.
+
+Predicted outcome: 1 matched, 2 unmatched. Observed outcome: 1
+matched, 2 unmatched. Matcher behavior matches design.
+
+### Deployment status
+
+The Mac mini will pick up the new code on next `git pull`. First run
+will migrate `data/seen-vins.json` from v1 to v2 in-place on load
+(adds `email_signals: []` to every existing VIN record, stamps
+`_schema_version: 2`). The launchd plist at
+`launchd/com.craigpoland.mercedes-sentinel.plist` is unchanged.
+
+### Tuning to revisit after a few weeks of real runs
+
+- **Matcher tolerances** (`MATCH_MILEAGE_TOLERANCE_MI = 500`,
+  `MATCH_PRICE_TOLERANCE_USD = 2000`). First-pass values. Today's
+  validation hit score=0.000 — a perfect match — so the tolerances
+  weren't actually exercised at boundary. After a few real
+  same-VIN observations across cars.com and MBUSA with non-zero
+  drift, we'll see whether to tighten or loosen.
+- **`invType=cpo` only.** Open question from this doc's main body.
+  Flip to `cpo,pre` once triage's foregone-warranty-discount logic
+  is in place.
+- **MBUSA's straight-line vs. CONTEXT.md drive-mile** distance gate.
+  Today's result includes Mercedes-Benz of White Plains NY at 236 mi
+  straight-line, but CONTEXT.md previously noted it as 256 mi drive
+  (auto-Pass on geography). Triage needs to apply the drive-mile
+  refinement, or we add it as a post-filter in `ingest`. Probably
+  worth doing once we observe how often a >250-drive-mile dealer
+  passes the 250-straight-line gate.
