@@ -38,17 +38,28 @@ stop and flag the conflict rather than guessing.
   the ingestion script. A key must never land in the GitHub fork's
   history.
 - **No scraping layer.** Do not add Facebook Marketplace or Playwright
-  browser-automation code. Email-alert ingestion only.
-  - **Carve-out for hydration:** a polite HTTP GET against a listing
-    URL that arrived in an authorized email alert (Cars.com,
-    AutoTrader, CarGurus, MBUSA) is in-scope and not "scraping" in
-    the sense this rule forbids. We are following a link the user
-    already received, not crawling. Posture: realistic User-Agent,
-    1.5–3s jitter between requests, one request per email-referenced
-    URL, no parallel fan-out, no auth bypass, no headless browser.
-    Anything beyond that (search-result enumeration, dealer-site
-    crawling, JS rendering, captcha solving) stays out of scope and
-    requires a new conversation before it lands.
+  browser-automation code. Two sanctioned data sources:
+  - **MBUSA inventory API** (`nafta-service.mbusa.com`): consumer-
+    facing JSON endpoint that MBUSA's own SPA hits on every page-load.
+    Akamai-cached, no auth, no CSRF. Polite posture still applies —
+    realistic UA, 1.5–3s jitter between page requests, one retry on
+    5xx, no parallel fan-out. Build the URL with the SPA's exact
+    param order; the cache layer is order-sensitive. See
+    `scripts/mbusa_inventory.py`.
+  - **Authorized email alerts** (Cars.com, AutoTrader, CarGurus):
+    Gmail label polling via IMAP. Per-email parsing only — no
+    follow-the-URL fetches against the listing pages anymore. (The
+    pre-pivot cars.com hydration path was blocked by Cloudflare's
+    escalation and removed in commit 7 of the Architecture B pivot
+    — see MBUSA_PIVOT.md.) Cars.com emails contribute price-drop
+    signal that's joined to MBUSA candidates by year + trim +
+    mileage + price fuzzy match (see
+    `scripts/email_signal_matcher.py`).
+
+  Anything beyond these two sources (search-result enumeration,
+  dealer-site crawling, JS rendering, captcha solving, TLS-fingerprint
+  impersonation) stays out of scope and requires a new conversation
+  before it lands.
 - **Preserve the upstream LICENSE.** The fork is MIT — keep pjdoland's
   LICENSE file intact in the repo.
 

@@ -455,16 +455,17 @@ class TestCarsComEmailSignalShape(unittest.TestCase):
         self.assertEqual(md["price"], 87495)
 
     def test_parser_does_not_import_hydrate(self):
-        # The hydrate module still exists (deletion comes in commit 7),
-        # but cars_com.py must no longer reference it.
+        # The hydrate module was deleted in commit 7 of the
+        # Architecture B pivot. This test guards against accidentally
+        # reintroducing a hydrate dependency on a future refactor.
         self.assertFalse(
             hasattr(cars_com, "hydrate"),
-            "cars_com.py should not import scripts.hydrate after the "
-            "MBUSA pivot — emails are signal-only and don't hit the network.",
+            "cars_com.py must not import scripts.hydrate — emails are "
+            "signal-only and don't hit the network post-pivot.",
         )
         self.assertFalse(
             hasattr(cars_com, "_try_hydrate"),
-            "_try_hydrate should be deleted, not just unused.",
+            "_try_hydrate was removed in commit 5; do not reintroduce.",
         )
 
 

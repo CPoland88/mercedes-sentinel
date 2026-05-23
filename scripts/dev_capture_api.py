@@ -1,8 +1,10 @@
 """Dev-only tool: capture a JSON API response with browser-XHR headers.
 
-Sibling of scripts.dev_capture_html. Used for recon and selector-design
-work against MBUSA's inventory API
-(nafta-service.mbusa.com/api/inv/v1/...).
+Used for recon and ad-hoc validation against MBUSA's inventory API
+(nafta-service.mbusa.com/api/inv/v1/...). The production client lives
+in scripts/mbusa_inventory.py — this script is for one-shot manual
+captures (e.g. when MBUSA's response shape might have drifted and
+you want to inspect a raw payload).
 
 The production HttpxFetcher in scripts/hydrate.py sends headers that
 mimic a top-level browser navigation (Sec-Fetch-Mode: navigate,
