@@ -50,7 +50,7 @@ import logging
 import random
 import time
 from dataclasses import dataclass, field
-from typing import Iterable, List, Optional, Protocol
+from typing import Iterable, List, Optional
 from urllib.parse import urlencode
 
 import httpx

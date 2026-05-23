@@ -237,3 +237,36 @@ The cars.com hydration commits themselves (`fa0ba15`, `9c8f84e`,
 `4e2468e`, `66b3fe5`) get deleted from working tree in commit 7
 above. They remain in git history as documentation of the path we
 walked.
+
+## Status — 2026-05-23
+
+**Architecturally complete.** Seven of eight planned commits landed on
+2026-05-23:
+
+1. `7fca376` — this decision doc
+2. `10c2137` — `scripts/mbusa_inventory.py` API client (36 tests)
+3. `77ac5cd` — `scripts/state.py` schema v2 (per-VIN `email_signals` + migration, 12 new tests)
+4. `9d9748e` + `5aabd18` — wire MBUSA into `ingest.py` (17 tests) + resilience hotfixes (`max_year` clamp at current calendar year, SPA-exact querystring param order, tolerant pagination on 5xx for later pages)
+5. `4720eba` — `parsers/cars_com.py` → EmailSignals, hydration dropped
+6. `ae77051` — `scripts/email_signal_matcher.py` + ingest integration (34 tests)
+7. `bb9aa90` — delete `scripts/hydrate.py`, `scripts/dev_capture_html.py`, `scripts/tests/test_hydrate.py`; retire WORKSPACE.md hydration carve-out
+
+Net diff across all seven: roughly –1,000 lines. Suite at `bb9aa90`:
+**204 tests OK** (the 238 in `ae77051` minus the 34 in the deleted
+`test_hydrate.py`).
+
+**Commit 8 — live end-to-end verification — is deferred** until
+MBUSA's inventory backend recovers. As of the morning of 2026-05-23
+their inventory pages render blank (likely Saturday maintenance);
+the API was working as recently as Friday night. The validation
+one-liner (`run_mbusa_poll` with `write_state=False`, captured
+candidates printed) is the gold-standard test; the fixture path
+(`scripts/ingest.py --fixtures scripts/tests/fixtures`) already
+passes cleanly against the local cars.com price-drop sample.
+
+**Calibration anchor for the eventual live run:** the cars.com
+price-drop fixture carries a vehicle at 25,619 mi / $71,999 that is
+the same VIN MBUSA's coverage check found in inventory on
+2026-05-21 (`4JGFF5KEXRB219544`, Ray Catena of Freehold NJ). The
+first healthy live `--dry-run` should produce a matched EmailSignal
+attachment for that VIN. If it doesn't, the matcher regressed.

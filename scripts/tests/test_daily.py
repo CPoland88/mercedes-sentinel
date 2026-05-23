@@ -11,7 +11,7 @@ correctly isolates "today's verdicts" from accumulated history.
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from .. import daily, ingest, notify, state, triage
 

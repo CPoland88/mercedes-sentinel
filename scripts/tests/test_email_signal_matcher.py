@@ -10,7 +10,6 @@ import unittest
 from ..email_signal_matcher import (
     MATCH_MILEAGE_TOLERANCE_MI,
     MATCH_PRICE_TOLERANCE_USD,
-    MatchOutcome,
     _extract_trim_from_model_id,
     match_email_signal,
 )

@@ -17,7 +17,7 @@ import email
 import unittest
 from email.message import EmailMessage
 
-from ..parsers import cars_com, detect_provider, fallback, parse
+from ..parsers import cars_com, fallback, parse
 
 
 # ---- helpers ----
