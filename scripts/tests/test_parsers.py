@@ -6,22 +6,18 @@ samples from your actual Gmail inbox should be added under
 scripts/tests/fixtures/ (gitignored — they may contain dealer-specific
 data you don't want public) and exercised via the --fixtures CLI flag.
 
-Cars.com tests patch scripts.hydrate.hydrate_cars_com so the parser's
-hydration pass doesn't try to reach cars.com from the test runner.
-TestCarsComMetadata patches it to a no-op (empty HydratedListing) in
-setUp so its tests focus on block-detection + metadata extraction.
-TestCarsComHydration uses per-test patches to exercise the hydration
-integration explicitly.
+Cars.com tests assert the post-MBUSA-pivot EmailSignal shape: no VIN,
+``source: "email_signal"``, ``cars_com_uuid`` extracted from the URL.
+The parser no longer hydrates listing URLs, so no hydration mock is
+needed.
 """
 from __future__ import annotations
 
 import email
 import unittest
 from email.message import EmailMessage
-from unittest.mock import patch
 
-from .. import hydrate
-from ..parsers import detect_provider, fallback, parse
+from ..parsers import cars_com, detect_provider, fallback, parse
 
 
 # ---- helpers ----
@@ -242,24 +238,15 @@ class TestCarsComMetadata(unittest.TestCase):
     the per-vehicle URL UUID, so the duplicate URL doesn't cause
     duplicate candidates.
 
-    Each test patches scripts.hydrate.hydrate_cars_com to return an
-    empty HydratedListing — the parser's hydration pass becomes a
-    no-op, leaving vin=None and adding no merged fields. Hydration-
-    specific behavior is exercised in TestCarsComHydration.
+    Post-MBUSA-pivot: the parser emits **EmailSignals** rather than
+    full candidates. No VIN field (cars.com strips it from emails);
+    ``source: "email_signal"`` and ``cars_com_uuid`` flag the dict
+    for commit 6's matcher. EmailSignal-specific shape assertions
+    live in :class:`TestCarsComEmailSignalShape` below.
 
     These tests build synthetic bodies that mirror the real template.
     Real .eml samples live in scripts/tests/fixtures/ (gitignored).
     """
-
-    def setUp(self):
-        self._hydrate_patcher = patch.object(
-            hydrate, "hydrate_cars_com",
-            return_value=hydrate.HydratedListing(),
-        )
-        self._hydrate_patcher.start()
-
-    def tearDown(self):
-        self._hydrate_patcher.stop()
 
     _block = staticmethod(_cars_com_block)
 
@@ -270,8 +257,6 @@ class TestCarsComMetadata(unittest.TestCase):
         candidates = parse(msg)
         self.assertEqual(len(candidates), 1)
         c = candidates[0]
-        # VIN is None pre-hydration — the next commit populates it.
-        self.assertIsNone(c["vin"])
         self.assertIn("vehicledetail/12345abc", c["listing_url"])
         self.assertEqual(c["provider"], "cars_com")
         self.assertEqual(c["parser"], "cars_com")
@@ -356,15 +341,6 @@ class TestCarsComMetadata(unittest.TestCase):
         self.assertEqual(md["price"], 104327)
         self.assertNotIn("price_drop_delta", md)
 
-    def test_vin_stays_none_when_hydration_returns_no_vin(self):
-        """When hydration returns an empty HydratedListing (mocked here),
-        the candidate's vin stays None. ingest.py will warn-drop it
-        downstream, which is the right behavior for an unfetchable
-        listing — better than a silent drop at the parser layer."""
-        body = self._block("a", "2024", "580", "5,000 mi.", "$104,327")
-        candidates = parse(_build_email("noreply@cars.com", "alert", body))
-        self.assertTrue(all(c["vin"] is None for c in candidates))
-
     def test_no_vehicledetail_urls_falls_back_to_regex(self):
         """Non-standard cars.com formats (account notices, weekly
         digests) shouldn't be silently dropped — fallback parser still
@@ -424,167 +400,72 @@ class TestProviderFailureFallback(unittest.TestCase):
         self.assertTrue(candidates[0].get("parser_fallback"))
 
 
-class TestCarsComHydration(unittest.TestCase):
-    """Tests for the hydration integration in cars_com.parse.
+class TestCarsComEmailSignalShape(unittest.TestCase):
+    """Post-MBUSA-pivot output contract for cars.com.
 
-    The parser, after building per-vehicle candidates from the email,
-    calls scripts.hydrate.hydrate_cars_com per listing URL to fill in
-    VIN + dealer + color + packages + CPO. These tests mock the
-    hydration call per-test so we can assert on the merge behavior
-    without touching the network.
+    cars.com emails no longer feed the queue directly. The parser
+    emits EmailSignal-shaped dicts: no VIN (cars.com strips it from
+    alert bodies), ``source: "email_signal"`` to route through commit
+    6's matcher, and ``cars_com_uuid`` for the audit trail and any
+    future direct-match scheme.
     """
 
-    def test_hydration_populates_vin_on_candidate(self):
+    def test_signal_has_source_email_signal(self):
         body = _cars_com_block(
             "5b475d0d-b34a-40b6-b372-83469b4b7655",
             "2024", "450", "38,099 mi.", "$59,397",
         )
-        msg = _build_email("noreply@cars.com", "alert", body)
-        listing = hydrate.HydratedListing(vin="4JGFF5KE0SB288880")
-        with patch.object(hydrate, "hydrate_cars_com", return_value=listing) as m:
-            candidates = parse(msg)
-        self.assertEqual(len(candidates), 1)
-        self.assertEqual(candidates[0]["vin"], "4JGFF5KE0SB288880")
-        m.assert_called_once()
+        signals = parse(_build_email("noreply@cars.com", "alert", body))
+        self.assertEqual(len(signals), 1)
+        self.assertEqual(signals[0]["source"], "email_signal")
 
-    def test_hydration_merges_dealer_color_packages_into_metadata(self):
+    def test_signal_has_no_vin_field(self):
         body = _cars_com_block(
             "5b475d0d-b34a-40b6-b372-83469b4b7655",
-            "2024", "580", "13,872 mi.", "$87,495",
+            "2024", "450", "38,099 mi.", "$59,397",
         )
-        msg = _build_email("noreply@cars.com", "alert", body)
-        listing = hydrate.HydratedListing(
-            vin="4JGFF8FE2SB431338",
-            dealer_name="MB of Tysons Corner",
-            dealer_city="Vienna",
-            dealer_state="VA",
-            exterior_color="Emerald Green Metallic",
-            packages=["Pinnacle Trim", "Acoustic Comfort Package"],
-            cpo_badge="Certified Pre-Owned",
-        )
-        with patch.object(hydrate, "hydrate_cars_com", return_value=listing):
-            candidates = parse(msg)
-        md = candidates[0]["raw_metadata"]
-        self.assertEqual(md["dealer_name"], "MB of Tysons Corner")
-        self.assertEqual(md["dealer_city"], "Vienna")
-        self.assertEqual(md["dealer_state"], "VA")
-        self.assertEqual(md["exterior_color"], "Emerald Green Metallic")
-        self.assertEqual(md["packages"], ["Pinnacle Trim", "Acoustic Comfort Package"])
-        self.assertEqual(md["cpo_badge"], "Certified Pre-Owned")
-        # VIN gets promoted to candidate, not also in raw_metadata
-        self.assertNotIn("vin", md)
-        self.assertEqual(candidates[0]["vin"], "4JGFF8FE2SB431338")
+        signals = parse(_build_email("noreply@cars.com", "alert", body))
+        # Absent — not present-but-None. Downstream defensively uses
+        # .get("vin") so both shapes would work, but absence is the
+        # cleaner contract.
+        self.assertNotIn("vin", signals[0])
 
-    def test_email_fields_take_precedence_over_hydration(self):
-        """Email is authoritative for price/mileage/delta. Even if
-        hydration tries to return conflicting values for those fields
-        (it currently doesn't, but the precedence rule must hold for
-        future HydratedListing growth), the email wins."""
+    def test_signal_carries_cars_com_uuid(self):
+        uuid = "5b475d0d-b34a-40b6-b372-83469b4b7655"
+        body = _cars_com_block(uuid, "2024", "450", "38,099 mi.", "$59,397")
+        signals = parse(_build_email("noreply@cars.com", "alert", body))
+        self.assertEqual(signals[0]["cars_com_uuid"], uuid)
+
+    def test_signal_listing_url_preserved_for_audit(self):
+        uuid = "5b475d0d-b34a-40b6-b372-83469b4b7655"
+        body = _cars_com_block(uuid, "2024", "450", "38,099 mi.", "$59,397")
+        signals = parse(_build_email("noreply@cars.com", "alert", body))
+        self.assertIn(f"vehicledetail/{uuid}", signals[0]["listing_url"])
+
+    def test_signal_carries_price_drop_delta_for_matcher(self):
+        # The whole point of the post-pivot cars.com path: feed the
+        # price-drop delta to triage as additional negotiation context.
         body = _cars_com_block(
             "5b475d0d-b34a-40b6-b372-83469b4b7655",
-            "2024", "450", "38,099 mi.", "$59,397", price_drop="$1,245",
+            "2024", "580", "13,872 mi.", "$87,495", price_drop="$1,245",
         )
-        msg = _build_email("noreply@cars.com", "alert", body)
-        # Synthesize a HydratedListing that would (hypothetically) collide
-        # on a year field — confirm the email's year wins via setdefault.
-        listing = hydrate.HydratedListing(
-            vin="4JGFF5KE0SB288880",
-            model_year=2026,  # Conflicts with email's "2024"
-        )
-        with patch.object(hydrate, "hydrate_cars_com", return_value=listing):
-            candidates = parse(msg)
-        md = candidates[0]["raw_metadata"]
-        # Email's year wins
-        self.assertEqual(md["year"], 2024)
-        # But hydrated model_year still lands under its own key (it's not
-        # a conflict — different field names, setdefault adds it)
-        self.assertEqual(md.get("model_year"), 2026)
-        # Email's price stays untouched
-        self.assertEqual(md["price"], 59397)
+        signals = parse(_build_email("noreply@cars.com", "alert", body))
+        md = signals[0]["raw_metadata"]
         self.assertEqual(md["price_drop_delta"], 1245)
+        self.assertEqual(md["price"], 87495)
 
-    def test_hydration_failure_annotates_error_and_leaves_vin_none(self):
-        body = _cars_com_block(
-            "5b475d0d-b34a-40b6-b372-83469b4b7655",
-            "2024", "450", "38,099 mi.", "$59,397",
+    def test_parser_does_not_import_hydrate(self):
+        # The hydrate module still exists (deletion comes in commit 7),
+        # but cars_com.py must no longer reference it.
+        self.assertFalse(
+            hasattr(cars_com, "hydrate"),
+            "cars_com.py should not import scripts.hydrate after the "
+            "MBUSA pivot — emails are signal-only and don't hit the network.",
         )
-        msg = _build_email("noreply@cars.com", "alert", body)
-        with patch.object(
-            hydrate, "hydrate_cars_com",
-            side_effect=hydrate.HydrationError("4xx fetching ... 404 Not Found"),
-        ):
-            candidates = parse(msg)
-        self.assertEqual(len(candidates), 1)
-        self.assertIsNone(candidates[0]["vin"])
-        self.assertIn("hydration_error", candidates[0]["raw_metadata"])
-        self.assertIn("404", candidates[0]["raw_metadata"]["hydration_error"])
-
-    def test_one_failure_does_not_kill_other_vehicles(self):
-        body = (
-            _cars_com_block("5b475d0d-b34a-40b6-b372-83469b4b7655",
-                            "2024", "450", "38,099 mi.", "$59,397") +
-            _cars_com_block("b2cc612e-a40b-4073-a457-4facb2d82a6f",
-                            "2024", "450", "37,802 mi.", "$67,864") +
-            _cars_com_block("d092dc28-4909-4dca-ac69-855bdf8da7ea",
-                            "2024", "450", "25,619 mi.", "$71,999")
+        self.assertFalse(
+            hasattr(cars_com, "_try_hydrate"),
+            "_try_hydrate should be deleted, not just unused.",
         )
-        msg = _build_email("noreply@cars.com", "alert", body)
-        # First call succeeds, second raises, third succeeds.
-        side_effects = [
-            hydrate.HydratedListing(vin="4JGFF5KE0SB288880"),
-            hydrate.HydrationError("503 after retry"),
-            hydrate.HydratedListing(vin="4JGFF8FE2SB431338"),
-        ]
-        with patch.object(hydrate, "hydrate_cars_com", side_effect=side_effects):
-            candidates = parse(msg)
-        self.assertEqual(len(candidates), 3)
-        self.assertEqual(candidates[0]["vin"], "4JGFF5KE0SB288880")
-        self.assertIsNone(candidates[1]["vin"])
-        self.assertIn("hydration_error", candidates[1]["raw_metadata"])
-        self.assertEqual(candidates[2]["vin"], "4JGFF8FE2SB431338")
-
-    def test_hydration_called_once_per_unique_vehicle(self):
-        """Each vehicle's URL appears twice in the email (top + 'View
-        details'). Hydration should run once per unique vehicle, not
-        once per URL occurrence."""
-        body = (
-            _cars_com_block("5b475d0d-b34a-40b6-b372-83469b4b7655",
-                            "2024", "450", "38,099 mi.", "$59,397") +
-            _cars_com_block("b2cc612e-a40b-4073-a457-4facb2d82a6f",
-                            "2024", "450", "37,802 mi.", "$67,864")
-        )
-        msg = _build_email("noreply@cars.com", "alert", body)
-        with patch.object(hydrate, "hydrate_cars_com",
-                          return_value=hydrate.HydratedListing()) as m:
-            parse(msg)
-        # Two vehicles, two hydration calls.
-        self.assertEqual(m.call_count, 2)
-        called_urls = [c.args[0] for c in m.call_args_list]
-        self.assertIn(
-            "https://www.cars.com/vehicledetail/5b475d0d-b34a-40b6-b372-83469b4b7655?aff=acqem100",
-            called_urls,
-        )
-        self.assertIn(
-            "https://www.cars.com/vehicledetail/b2cc612e-a40b-4073-a457-4facb2d82a6f?aff=acqem100",
-            called_urls,
-        )
-
-    def test_unexpected_exception_does_not_crash_run(self):
-        """Defense-in-depth: an unexpected error during hydration
-        (e.g. an HTML parse bug) should be caught and annotated, not
-        propagate out and kill the ingest run."""
-        body = _cars_com_block(
-            "5b475d0d-b34a-40b6-b372-83469b4b7655",
-            "2024", "450", "38,099 mi.", "$59,397",
-        )
-        msg = _build_email("noreply@cars.com", "alert", body)
-        with patch.object(hydrate, "hydrate_cars_com",
-                          side_effect=ValueError("unexpected parser bug")):
-            candidates = parse(msg)
-        self.assertEqual(len(candidates), 1)
-        self.assertIsNone(candidates[0]["vin"])
-        self.assertIn("hydration_error", candidates[0]["raw_metadata"])
-        self.assertIn("unexpected", candidates[0]["raw_metadata"]["hydration_error"])
 
 
 if __name__ == "__main__":

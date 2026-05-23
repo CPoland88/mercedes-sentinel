@@ -1,7 +1,15 @@
-"""Cars.com saved-search email parser.
+"""Cars.com saved-search email parser — EmailSignal producer.
 
-Handles the per-vehicle block template used by Cars.com price-drop alerts
-and (likely) new-listing alerts. Each vehicle in the email body has:
+Post-MBUSA-pivot role: cars.com emails are no longer a primary candidate
+stream. MBUSA's inventory API (see scripts/mbusa_inventory) is the
+authoritative source of in-spec vehicles; cars.com alerts contribute
+*price-drop trajectory signal* on top of those candidates. This parser
+extracts that signal — year, trim, mileage, ask, price_drop_delta —
+into an **EmailSignal** dict that commit 6's ingest pipeline matches
+against MBUSA candidates (typically by year + trim + mileage + price
+fuzzy match, since cars.com strips VINs from alert bodies).
+
+Per-vehicle block in a cars.com email:
 
   - Title:        "YYYY Mercedes-Benz GLS NNN 4MATIC"
   - Listing URL:  https://www.cars.com/vehicledetail/<uuid>?aff=...
@@ -10,36 +18,52 @@ and (likely) new-listing alerts. Each vehicle in the email body has:
   - Optional delta: "↓ $N price drop"
   - Ask price:    "$N"
 
-The email body contains NO VINs — Cars.com strips them from alerts and
-keeps them behind the vehicledetail URL. After per-vehicle blocks are
-extracted from the email, each candidate's listing URL is fetched via
-scripts.hydrate to populate VIN, dealer, exterior color, packages, and
-CPO badge from the listing page's Schema.org JSON-LD.
+The email body contains NO VINs — cars.com strips them from alerts.
+The parser does NOT attempt to fetch the listing page anymore;
+Cloudflare's bot-detection escalation made cars.com hydration
+unsustainable for daily automation (see MBUSA_PIVOT.md for the
+history). VINs, if needed, are resolved downstream by matching
+against MBUSA candidates.
 
 Block-detection algorithm:
 
   1. Find every `vehicledetail/<uuid>` URL in the text/plain body.
      Group by UUID — each unique UUID is one vehicle. The duplicate
-     URL per vehicle is its own boundary signal; we use the first and
-     last positions to bracket the block.
-  2. For each unique vehicle, walk backward from its first URL to the
-     closest title-line match. Title plus [first_url_start, last_url_end]
-     defines the block.
+     URL per vehicle is its own boundary signal; we use the first
+     and last positions to bracket the block.
+  2. For each unique vehicle, walk backward from its first URL to
+     the closest title-line match. Title plus
+     [first_url_start, last_url_end] defines the block.
   3. Extract mileage, price, and price-drop delta from inside the
      block, isolated from email-footer noise.
-  4. Hydrate each candidate's listing URL to fill VIN + dealer +
-     color + packages + CPO. Per-vehicle hydration failures are
-     isolated — one 4xx doesn't kill the other vehicles in the batch.
 
-Field precedence: the email is authoritative for price/mileage/delta
-(the listing page may show a fresh price drop after email send, and
-the dedup gate needs to compare against what the email actually said).
-Hydration fills gaps but does not overwrite email-derived fields.
+EmailSignal dict shape:
+
+  {
+    "provider": "cars_com",
+    "parser": "cars_com",
+    "source": "email_signal",
+    "listing_url": "<full cars.com URL>",
+    "cars_com_uuid": "<per-vehicle UUID from URL>",
+    "raw_metadata": {
+        "year": int,
+        "trim_number": str,         # e.g. "450", "580"
+        "drivetrain": str (opt),    # e.g. "4MATIC"
+        "mileage": int (opt),
+        "price": int (opt),         # ask at observation
+        "price_drop_delta": int (opt),  # positive when ask decreased
+        "deal_badge": str (opt),    # e.g. "Fair Deal"
+    },
+  }
+
+Note the absence of a `vin` field — see module docstring.
 
 Falls back to `parsers.fallback` when no `vehicledetail/` URLs are
-present — for non-standard Cars.com formats (weekly market reports,
+present — for non-standard cars.com formats (weekly market reports,
 account notifications) the fallback still surfaces any VINs and URLs
-in the body so the alert doesn't get silently dropped.
+in the body so the alert isn't silently dropped. Fallback-derived
+items are not EmailSignal-shaped; commit 6's matcher will route
+them through the legacy candidate path.
 """
 from __future__ import annotations
 
@@ -49,7 +73,6 @@ from email.message import Message
 from typing import List, Optional
 
 from . import fallback
-from .. import hydrate
 
 logger = logging.getLogger(__name__)
 
@@ -144,16 +167,21 @@ def _find_title_before(title_matches, position: int):
     return best
 
 
-def _build_candidate(
+def _build_email_signal(
     title_match,
     listing_url: str,
+    uuid: str,
     block: str,
 ) -> dict:
-    """Assemble the per-vehicle candidate dict.
+    """Assemble the per-vehicle EmailSignal dict.
 
     `block` is the substring [title.start, last_url.end] for this
     vehicle. Restricting metadata extraction to the block keeps
     email-footer dollar amounts from being misread as the asking price.
+
+    No VIN field — cars.com emails strip VINs. Commit 6's matcher in
+    ingest.py associates EmailSignals with MBUSA candidates by a
+    fuzzy join on (year, trim_number, mileage, price).
     """
     year = int(title_match.group(1))
     trim_number = title_match.group(2)
@@ -193,53 +221,13 @@ def _build_candidate(
         metadata["deal_badge"] = badge_match.group(1)
 
     return {
-        "vin": None,  # Filled in by _try_hydrate after the candidate is built.
-        "listing_url": listing_url,
         "provider": "cars_com",
         "parser": "cars_com",
+        "source": "email_signal",
+        "listing_url": listing_url,
+        "cars_com_uuid": uuid,
         "raw_metadata": metadata,
     }
-
-
-def _try_hydrate(candidate: dict) -> None:
-    """Fetch the listing page via scripts.hydrate and merge VIN +
-    dealer + color + packages + CPO into the candidate.
-
-    Mutates `candidate` in place. On hydration failure (4xx, network
-    down, retried 5xx), leaves vin=None and annotates raw_metadata with
-    `hydration_error` so the failure is visible downstream rather than
-    silent. The candidate still gets emitted — ingest.py's existing
-    VIN check will warn-drop it, but the email isn't lost from the
-    pipeline's audit trail.
-
-    Field precedence: the email is authoritative for price/mileage/
-    delta (the listing page might show a fresh price drop after the
-    email was sent, and the dedup gate needs to compare against what
-    the email actually said). Hydration fills gaps via setdefault; it
-    does not overwrite.
-    """
-    url = candidate["listing_url"]
-    try:
-        hydrated = hydrate.hydrate_cars_com(url)
-    except hydrate.HydrationError as e:
-        logger.warning("Hydration failed for %s: %s", url, e)
-        candidate["raw_metadata"]["hydration_error"] = str(e)
-        return
-    except Exception as e:
-        # Defense in depth — an unexpected parser/HTML bug shouldn't
-        # crash the ingest run. Log and continue.
-        logger.exception("Unexpected hydration error for %s: %s", url, e)
-        candidate["raw_metadata"]["hydration_error"] = f"unexpected: {e}"
-        return
-
-    if hydrated.vin:
-        candidate["vin"] = hydrated.vin
-
-    md = candidate["raw_metadata"]
-    for k, v in hydrated.to_dict().items():
-        if k == "vin":
-            continue  # Already promoted to the candidate's vin field.
-        md.setdefault(k, v)
 
 
 def _fallback_with_provider_tag(msg: Message) -> List[dict]:
@@ -275,7 +263,7 @@ def parse(msg: Message) -> List[dict]:
 
     title_matches = list(TITLE_PATTERN.finditer(body))
 
-    candidates: List[dict] = []
+    signals: List[dict] = []
     for uuid, matches in uuid_to_matches.items():
         first_url_match = matches[0]
         last_url_match = matches[-1]
@@ -287,16 +275,9 @@ def parse(msg: Message) -> List[dict]:
 
         block = body[title_match.start():last_url_match.end()]
         listing_url = first_url_match.group(0)
-        candidates.append(_build_candidate(title_match, listing_url, block))
+        signals.append(_build_email_signal(title_match, listing_url, uuid, block))
 
-    # Hydration pass — follow each listing URL to fetch VIN + dealer +
-    # color + packages + CPO. One request per listing URL, paced by the
-    # HttpxFetcher's jitter (1.5-3s). For an N-vehicle batch this adds
-    # ~(N-1) * 2s of latency, which is the cost of getting fields the
-    # email body strips. Per-vehicle failures are isolated.
-    if candidates:
-        logger.info("Hydrating %d cars.com listing(s)", len(candidates))
-        for c in candidates:
-            _try_hydrate(c)
+    if signals:
+        logger.info("Extracted %d cars.com EmailSignal(s)", len(signals))
 
-    return candidates
+    return signals
