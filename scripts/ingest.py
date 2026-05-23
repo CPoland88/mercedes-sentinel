@@ -42,7 +42,7 @@ except ImportError:  # pragma: no cover — only relevant before requirements in
     def load_dotenv() -> None:
         pass
 
-from . import mail, mbusa_inventory, state
+from . import email_signal_matcher, mail, mbusa_inventory, state
 from .mbusa_inventory import MbusaCandidate
 from .parsers import parse as parse_email
 
@@ -165,7 +165,7 @@ def run_mbusa_poll(
     logger: logging.Logger,
     write_state: bool,
     stats: dict,
-) -> None:
+) -> list[dict]:
     """Fetch current MBUSA inventory and enqueue surviving candidates.
 
     Two-stage filter: the API call narrows by zip/model/color/CPO/year
@@ -173,6 +173,10 @@ def run_mbusa_poll(
     CONTEXT.md hard caps on the response (free, client-side). Survivors
     flow through the same ``_process_candidates`` path the email loop
     uses, so dedup behavior is identical.
+
+    Returns the list of candidate dicts that passed the filter and were
+    sent to ``_process_candidates``. Callers can use this list as the
+    "this-run MBUSA candidates" set for downstream EmailSignal matching.
 
     Stats keys added on every call (regardless of dry-run):
 
@@ -229,6 +233,78 @@ def run_mbusa_poll(
     )
 
     _process_candidates(kept, logger, write_state, stats)
+    return kept
+
+
+def _attach_email_signals(
+    signals: list,
+    mbusa_candidates_this_run: list,
+    logger: logging.Logger,
+    write_state: bool,
+    stats: dict,
+) -> None:
+    """Match cars.com EmailSignals to MBUSA candidates from this run
+    and persist matches via state.add_email_signal.
+
+    On match: log the (signal UUID, matched VIN, score), call
+    state.add_email_signal with the signal's price-drop fields.
+    On no match: log the signal UUID and the reason; the signal is
+    discarded but the discard is observable in the daily-run audit.
+
+    No persistence of orphan signals (those without a matching MBUSA
+    candidate). Cars.com price-drop emails for VINs that MBUSA isn't
+    returning today are almost always auto-Pass per CONTEXT.md (non-
+    CPO, wrong color, or out of geography) so silently dropping is
+    acceptable. We can persist orphans later if real data shows we're
+    losing useful signal.
+    """
+    for signal in signals:
+        outcome = email_signal_matcher.match_email_signal(
+            signal, mbusa_candidates_this_run
+        )
+        signal_id = signal.get("cars_com_uuid", "<no-uuid>")
+        if not outcome.matched:
+            stats["email_signals_unmatched"] += 1
+            logger.info(
+                "Unmatched email signal %s: %s",
+                signal_id,
+                outcome.reason_no_match,
+            )
+            continue
+
+        s_md = signal.get("raw_metadata") or {}
+        logger.info(
+            "Matched email signal %s -> VIN %s (score %.3f)",
+            signal_id,
+            outcome.matched_vin,
+            outcome.score,
+        )
+        if write_state:
+            state.add_email_signal(
+                vin=outcome.matched_vin,
+                provider=signal.get("provider", "cars_com"),
+                price_drop_delta=s_md.get("price_drop_delta"),
+                ask_at_observation=s_md.get("price"),
+            )
+        stats["email_signals_attached"] += 1
+
+
+def _split_signals_and_candidates(items: list) -> tuple[list, list]:
+    """Partition a parser's output into (email_signals, regular).
+
+    EmailSignals are routed through the matcher + state.add_email_signal
+    path; regular candidates flow through _process_candidates as before.
+    The discriminator is the `source` field that
+    scripts.parsers.cars_com.parse stamps on each EmailSignal dict.
+    """
+    signals: list = []
+    regular: list = []
+    for item in items:
+        if item.get("source") == "email_signal":
+            signals.append(item)
+        else:
+            regular.append(item)
+    return signals, regular
 
 
 def _process_candidates(
@@ -290,14 +366,17 @@ def run_live(
         "mbusa_kept_after_filter": 0,
         "mbusa_filtered_out": 0,
         "mbusa_skipped": False,
+        "email_signals_attached": 0,
+        "email_signals_unmatched": 0,
     }
     write_state = not dry_run
 
+    mbusa_candidates_this_run: list[dict] = []
     if skip_mbusa:
         stats["mbusa_skipped"] = True
         logger.info("MBUSA poll skipped (--skip-mbusa)")
     else:
-        run_mbusa_poll(logger, write_state, stats)
+        mbusa_candidates_this_run = run_mbusa_poll(logger, write_state, stats)
 
     with mail.from_env() as poller:
         unread = poller.fetch_unread()
@@ -305,12 +384,25 @@ def run_live(
         logger.info("Fetched %d unread email(s) from label %s", len(unread), poller.label)
         for uid, raw in unread:
             try:
-                candidates = parse_email(raw)
+                items = parse_email(raw)
             except Exception as e:
                 logger.exception("Parser raised on uid=%s: %s", uid, e)
                 continue
-            stats["candidates_extracted"] += len(candidates)
-            _process_candidates(candidates, logger, write_state, stats)
+            stats["candidates_extracted"] += len(items)
+
+            # Split the parser output: EmailSignals (cars.com post-pivot)
+            # go through the matcher + state.add_email_signal path;
+            # regular candidates (autotrader, cargurus, fallback) flow
+            # through _process_candidates as before.
+            email_signals, regular_candidates = _split_signals_and_candidates(items)
+            _process_candidates(regular_candidates, logger, write_state, stats)
+            _attach_email_signals(
+                email_signals,
+                mbusa_candidates_this_run,
+                logger,
+                write_state,
+                stats,
+            )
             if not dry_run:
                 poller.mark_read(uid)
     return stats

@@ -1,14 +1,21 @@
-"""Tests for scripts/ingest.py — specifically the MBUSA polling path
-added in commit 4 of the Architecture B pivot.
+"""Tests for scripts/ingest.py.
+
+Coverage:
+
+  * The MBUSA polling path added in commit 4 (run_mbusa_poll,
+    candidate-shape mapping, hard-cap filtering, --skip-mbusa wiring).
+  * The EmailSignal attach path added in commit 6
+    (_split_signals_and_candidates, _attach_email_signals, the
+    matcher's integration into run_live).
 
 Tests inject a MagicMock for ``mbusa_inventory.fetch_matching_inventory``
 so no live MBUSA call ever fires. State paths are redirected into a
 per-test tempdir using the same pattern as test_state.py — nothing
 under data/ is touched.
 
-Tests for the email path live in test_parsers.py (parser unit tests)
-and the existing test_state.py (state interactions). Commit 5 will
-exercise the EmailSignal refactor at the parser level.
+Tests for the email path proper live in test_parsers.py (parser unit
+tests) and test_state.py (state interactions). The matcher itself is
+tested in test_email_signal_matcher.py.
 """
 from __future__ import annotations
 
@@ -345,6 +352,196 @@ class TestRunLiveSkipMbusa(unittest.TestCase):
         stats = ingest.run_live(self.logger, dry_run=False, skip_mbusa=False)
         self.assertEqual(self.mock_fetch.call_count, 1)
         self.assertFalse(stats["mbusa_skipped"])
+
+
+# ---------- _split_signals_and_candidates ----------
+
+
+class TestSplitSignalsAndCandidates(unittest.TestCase):
+    """Discriminates by the `source` field that
+    scripts.parsers.cars_com.parse stamps on EmailSignals."""
+
+    def test_splits_by_source_field(self):
+        items = [
+            {"source": "email_signal", "vin": None, "cars_com_uuid": "u1"},
+            {"vin": "VIN_FROM_AUTOTRADER", "provider": "autotrader"},
+            {"source": "email_signal", "vin": None, "cars_com_uuid": "u2"},
+            {"vin": "VIN_FROM_FALLBACK", "provider": "cars_com",
+             "parser_fallback": True},
+        ]
+        signals, regular = ingest._split_signals_and_candidates(items)
+        self.assertEqual(len(signals), 2)
+        self.assertEqual(len(regular), 2)
+        self.assertEqual(signals[0]["cars_com_uuid"], "u1")
+        self.assertEqual(regular[0]["vin"], "VIN_FROM_AUTOTRADER")
+
+    def test_empty_input(self):
+        signals, regular = ingest._split_signals_and_candidates([])
+        self.assertEqual(signals, [])
+        self.assertEqual(regular, [])
+
+    def test_all_regular(self):
+        items = [
+            {"vin": "A", "provider": "autotrader"},
+            {"vin": "B", "provider": "cargurus"},
+        ]
+        signals, regular = ingest._split_signals_and_candidates(items)
+        self.assertEqual(signals, [])
+        self.assertEqual(len(regular), 2)
+
+
+# ---------- _attach_email_signals ----------
+
+
+def _signal(
+    *,
+    uuid: str = "test-uuid",
+    year: int = 2024,
+    trim_number: str = "580",
+    mileage: float = 13872,
+    price: float = 87495,
+    price_drop_delta: float = 1245,
+) -> dict:
+    return {
+        "provider": "cars_com",
+        "source": "email_signal",
+        "cars_com_uuid": uuid,
+        "listing_url": f"https://www.cars.com/vehicledetail/{uuid}",
+        "raw_metadata": {
+            "year": year,
+            "trim_number": trim_number,
+            "mileage": mileage,
+            "price": price,
+            "price_drop_delta": price_drop_delta,
+        },
+    }
+
+
+def _candidate_dict(
+    *,
+    vin: str = "4JGFF8FE0NB000001",
+    year: int = 2024,
+    model_id: str = "GLS580W4",
+    mileage: float = 13872,
+    price: float = 87495,
+) -> dict:
+    """The candidate-dict shape produced by ingest._mbusa_candidate_to_dict."""
+    return {
+        "vin": vin,
+        "provider": "mbusa",
+        "source": "mbusa",
+        "listing_url": None,
+        "raw_metadata": {
+            "year": year,
+            "model_id": model_id,
+            "mileage": mileage,
+            "price": price,
+        },
+    }
+
+
+class TestAttachEmailSignalsBase(unittest.TestCase):
+    """Shared tempdir + state-path patches for the attach tests."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self._tmp_dir = Path(self._tmp.name)
+        self._state_patches = [
+            patch.object(state, "DATA_DIR", self._tmp_dir),
+            patch.object(state, "SEEN_VINS_PATH", self._tmp_dir / "seen-vins.json"),
+            patch.object(state, "QUEUE_PATH", self._tmp_dir / "queue.json"),
+            patch.object(state, "TRIAGED_PATH", self._tmp_dir / "triaged.json"),
+        ]
+        for p in self._state_patches:
+            p.start()
+        self.logger = _silent_logger()
+
+    def tearDown(self):
+        for p in self._state_patches:
+            p.stop()
+        self._tmp.cleanup()
+
+
+class TestAttachEmailSignalsMatch(TestAttachEmailSignalsBase):
+
+    def test_matched_signal_calls_add_email_signal(self):
+        signal = _signal(price_drop_delta=1245, price=87495)
+        cand = _candidate_dict(vin="4JGFF8FE0NB000001")
+
+        stats = {"email_signals_attached": 0, "email_signals_unmatched": 0}
+        ingest._attach_email_signals(
+            [signal], [cand], self.logger,
+            write_state=True, stats=stats,
+        )
+
+        self.assertEqual(stats["email_signals_attached"], 1)
+        self.assertEqual(stats["email_signals_unmatched"], 0)
+        signals = state.get_email_signals("4JGFF8FE0NB000001")
+        self.assertEqual(len(signals), 1)
+        self.assertEqual(signals[0]["provider"], "cars_com")
+        self.assertEqual(signals[0]["price_drop_delta"], 1245)
+        self.assertEqual(signals[0]["ask_at_observation"], 87495)
+
+    def test_match_picks_correct_vin_among_multiple_candidates(self):
+        # Two candidates, both in tolerance; matcher picks the closest.
+        near = _candidate_dict(vin="VINNEAR", mileage=13872, price=87495)
+        far = _candidate_dict(vin="VINFAR", mileage=14300, price=89000)
+        stats = {"email_signals_attached": 0, "email_signals_unmatched": 0}
+
+        ingest._attach_email_signals(
+            [_signal()], [near, far], self.logger,
+            write_state=True, stats=stats,
+        )
+
+        self.assertEqual(stats["email_signals_attached"], 1)
+        # VINFAR should NOT have a signal attached.
+        self.assertEqual(state.get_email_signals("VINFAR"), [])
+        self.assertEqual(len(state.get_email_signals("VINNEAR")), 1)
+
+
+class TestAttachEmailSignalsMiss(TestAttachEmailSignalsBase):
+
+    def test_unmatched_signal_does_not_write_state(self):
+        # Signal year doesn't match any candidate.
+        signal = _signal(year=2024)
+        cand = _candidate_dict(year=2025)
+
+        stats = {"email_signals_attached": 0, "email_signals_unmatched": 0}
+        ingest._attach_email_signals(
+            [signal], [cand], self.logger,
+            write_state=True, stats=stats,
+        )
+
+        self.assertEqual(stats["email_signals_attached"], 0)
+        self.assertEqual(stats["email_signals_unmatched"], 1)
+        # Candidate's VIN was never seen — no state writes.
+        self.assertEqual(state.get_email_signals(cand["vin"]), [])
+
+    def test_empty_candidate_list_marks_unmatched(self):
+        stats = {"email_signals_attached": 0, "email_signals_unmatched": 0}
+        ingest._attach_email_signals(
+            [_signal()], [], self.logger,
+            write_state=True, stats=stats,
+        )
+        self.assertEqual(stats["email_signals_unmatched"], 1)
+
+
+class TestAttachEmailSignalsDryRun(TestAttachEmailSignalsBase):
+
+    def test_write_state_false_skips_state_write(self):
+        signal = _signal()
+        cand = _candidate_dict()
+        stats = {"email_signals_attached": 0, "email_signals_unmatched": 0}
+
+        ingest._attach_email_signals(
+            [signal], [cand], self.logger,
+            write_state=False, stats=stats,
+        )
+
+        # Stats still update so the operator can see what would have attached.
+        self.assertEqual(stats["email_signals_attached"], 1)
+        # But state was not written.
+        self.assertEqual(state.get_email_signals(cand["vin"]), [])
 
 
 if __name__ == "__main__":
