@@ -1,0 +1,368 @@
+{
+  "type": "PRE",
+  "dealerId": "SAMPLE",
+  "gssnOutletId": "GS9999999",
+  "bodyStyleId": "SUV",
+  "bodyStyleName": "SUVs",
+  "classId": "GLS",
+  "className": "GLS",
+  "modelId": "GLS580W4",
+  "modelName": "GLS 580 4MATIC SUV",
+  "partial": false,
+  "year": "2024",
+  "msrp": 87495.0,
+  "vin": "4JGFF8FE0NB000001",
+  "available": true,
+  "brands": [],
+  "detailedContent": false,
+  "fuelType": {
+    "id": "G",
+    "name": "Gasoline"
+  },
+  "driveTrain": {
+    "id": "A",
+    "name": "Automatic"
+  },
+  "additionalPricingInformation": [
+    {
+      "type": "ADMIN_FEE",
+      "value": 0.0
+    },
+    {
+      "type": "IMPORT_FEE",
+      "value": 0.0
+    },
+    {
+      "type": "MBCAN_SUPPORT_LINE",
+      "value": 0.0
+    }
+  ],
+  "exteriorBaseImage": {
+    "url": "",
+    "type": "",
+    "size": ""
+  },
+  "interiorBaseImage": {
+    "url": "",
+    "type": "",
+    "size": ""
+  },
+  "exteriorMetaColor": "BLU",
+  "interiorMetaColor": "OTR",
+  "engine": "4.0L V8 biturbo with mild hybrid drive",
+  "paint": {
+    "id": "Twilight Blue metallic",
+    "name": "Twilight Blue metallic",
+    "metaCode": "BLU",
+    "price": 0.0,
+    "mapped": false,
+    "swatch": {
+      "url": "/content/dam/mb-nafta/us/myco/my23/swatches/paint/BYO-PAINT-THUMBNAIL-842.jpg",
+      "type": "IRIS"
+    }
+  },
+  "upholstery": {
+    "id": "Catalana Beige/Black leather",
+    "name": "Catalana Beige/Black leather",
+    "metaCode": "OTR",
+    "price": 0.0,
+    "mapped": false,
+    "swatch": {
+      "url": "/content/dam/mb-nafta/us/myco/my24/swatches/upholsteries/2024-GLS-SUV-UPHOLSTERY-THUMBNAIL-225A.jpg",
+      "type": "IRIS"
+    }
+  },
+  "properties": [
+    {
+      "name": "ACCELERATION",
+      "value": "4.7 sec",
+      "header": "Acceleration"
+    },
+    {
+      "name": "AUTOMATIC_TRANSMISSION",
+      "value": "Automatic",
+      "header": "Automatic transmission"
+    },
+    {
+      "name": "BATTERY_CAPACITY",
+      "value": "4.0L V8 biturbo with mild hybrid drive",
+      "header": "Battery capacity"
+    },
+    {
+      "name": "CARGO_CAPACITY",
+      "value": "17.4-84.7 cu ft",
+      "header": "Cargo capacity"
+    },
+    {
+      "name": "ENGINE",
+      "value": "4.0L V8 biturbo with mild hybrid drive",
+      "header": "Engine"
+    },
+    {
+      "name": "PASSENGER_CAPACITY",
+      "value": "7 (6 optional)",
+      "header": "Passenger Capacity"
+    },
+    {
+      "name": "HIGHWAY_ESTIMATE",
+      "value": "20 mpg",
+      "header": "Highway fuel economy"
+    },
+    {
+      "name": "NET_POWER",
+      "value": "510 hp @ 5,500 rpm",
+      "header": "Power"
+    },
+    {
+      "name": "NET_TORQUE",
+      "value": "538 lb-ft @ 2,000-4,000 rpm",
+      "header": "Torque"
+    },
+    {
+      "name": "EXTERIOR_COLOR",
+      "value": "Twilight Blue metallic",
+      "header": "Exterior Color"
+    },
+    {
+      "name": "INTERIOR_COLOR",
+      "value": "Catalana Beige/Black leather",
+      "header": "Interior Color"
+    },
+    {
+      "name": "MODEL",
+      "value": "GLS580W4",
+      "header": "Model"
+    },
+    {
+      "name": "WHEELS",
+      "value": "22-inch AMG multispoke",
+      "header": "Wheels"
+    },
+    {
+      "name": "YEAR",
+      "value": "2024",
+      "header": "Year"
+    },
+    {
+      "name": "VIN",
+      "value": "4JGFF8FE1RB057816",
+      "header": "VIN"
+    }
+  ],
+  "includedFeatures": [
+    {
+      "name": "Wireless Apple CarPlay"
+    },
+    {
+      "name": "Wireless Android Auto"
+    },
+    {
+      "name": "7-seat cabin configuration"
+    },
+    {
+      "name": "Online Music Streaming"
+    },
+    {
+      "name": "Active Distance Assist DISTRONIC"
+    },
+    {
+      "name": "Active Steering Assist"
+    },
+    {
+      "name": "Exit Warning Assist"
+    },
+    {
+      "name": "Heated and cooled front cupholders"
+    }
+  ],
+  "monthlyPaymentInfo": [
+    {
+      "apr": 8.28,
+      "financingType": "FINANCE",
+      "monthlyPayment": 1311.83,
+      "programEndDate": "2026-06-01",
+      "regionCode": "01",
+      "termLength": 72,
+      "downPaymentAmount": 20998.0
+    }
+  ],
+  "features": [
+    "Wireless Apple CarPlay",
+    "Wireless Android Auto",
+    "7-seat cabin configuration",
+    "Online Music Streaming",
+    "Active Distance Assist DISTRONIC",
+    "Active Steering Assist",
+    "Exit Warning Assist",
+    "Heated and cooled front cupholders"
+  ],
+  "usedVehicleAttributes": {
+    "historyReport": false,
+    "certified": true,
+    "demoVehicle": false,
+    "dealer": {
+      "id": "SAMPLE",
+      "name": "Sample Dealer of Sample City",
+      "gssnOutletId": "GS9999999",
+      "regionCode": "00",
+      "marketCode": "00",
+      "address": [
+        {
+          "type": "primary",
+          "line1": "1 Sample Way",
+          "line2": "",
+          "city": "Sample City",
+          "state": "NJ",
+          "zip": "08000",
+          "country": "US",
+          "region": "NORTHEAST",
+          "location": {
+            "lat": "40.000000",
+            "lng": "-74.000000",
+            "dist": "125.000000",
+            "distunit": "miles"
+          }
+        }
+      ],
+      "contact": [
+        {
+          "type": "phone",
+          "value": "(000) 000-0000"
+        },
+        {
+          "type": "fax",
+          "value": "(000) 000-0000"
+        }
+      ],
+      "url": "https://example.invalid",
+      "programs": [],
+      "languages": [
+        "en"
+      ],
+      "activities": [
+        {
+          "name": "sales",
+          "url": ""
+        }
+      ],
+      "placeId": "SAMPLE_PLACE",
+      "badges": [
+        "mbdealer",
+        "sales"
+      ]
+    },
+    "driveTrain": {
+      "code": "A",
+      "text": "Automatic"
+    },
+    "dsrp": 87495.0,
+    "fuelType": {
+      "code": "G",
+      "text": "Gasoline"
+    },
+    "mileage": 13872.0,
+    "mileageUnit": "mi",
+    "stockId": "44251U",
+    "images": [],
+    "optionList": [
+      {
+        "code": "0:16U",
+        "text": "Wireless Apple CarPlay"
+      },
+      {
+        "code": "0:17U",
+        "text": "Wireless Android Auto"
+      },
+      {
+        "code": "0:226",
+        "text": "7-seat cabin configuration"
+      },
+      {
+        "code": "0:22U",
+        "text": "Online Music Streaming"
+      },
+      {
+        "code": "0:233",
+        "text": "Active Distance Assist DISTRONIC"
+      },
+      {
+        "code": "0:266",
+        "text": "Active Steering Assist"
+      },
+      {
+        "code": "0:273",
+        "text": "Exit Warning Assist"
+      },
+      {
+        "code": "0:311",
+        "text": "Heated and cooled front cupholders"
+      }
+    ],
+    "reservable": true,
+    "reservePrice": 87495.0
+  },
+  "relevance": 0,
+  "dealer": {
+    "id": "SAMPLE",
+    "name": "Sample Dealer of Sample City",
+    "gssnOutletId": "GS9999999",
+    "regionCode": "00",
+    "marketCode": "00",
+    "address": [
+      {
+        "type": "primary",
+        "line1": "1 Sample Way",
+        "line2": "",
+        "city": "Sample City",
+        "state": "NJ",
+        "zip": "08000",
+        "country": "US",
+        "region": "NORTHEAST",
+        "location": {
+          "lat": "40.000000",
+          "lng": "-74.000000",
+          "dist": "125.000000",
+          "distunit": "miles"
+        }
+      }
+    ],
+    "contact": [
+      {
+        "type": "phone",
+        "value": "(000) 000-0000"
+      },
+      {
+        "type": "fax",
+        "value": "(000) 000-0000"
+      }
+    ],
+    "url": "https://example.invalid",
+    "programs": [],
+    "languages": [
+      "en"
+    ],
+    "activities": [
+      {
+        "name": "sales",
+        "url": ""
+      }
+    ],
+    "placeId": "SAMPLE_PLACE",
+    "badges": [
+      "mbdealer",
+      "sales"
+    ]
+  },
+  "inventoryPrice": 0.0,
+  "vehicleReservationStatus": "RESERVABLE",
+  "current": false,
+  "ePriceEnabled": true,
+  "digitalRetailing": false,
+  "dseDealerNewCar": true,
+  "isHermesLess": false,
+  "contactDealerForPrice": false,
+  "isVehicleCurrentlyReserved": false,
+  "isVehicleReservable": true,
+  "eLink": "",
+  "stockId": "SAMPLE-001"
+}
