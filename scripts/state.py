@@ -20,6 +20,25 @@ with a `per_provider` dict keyed by provider name, with each provider's
 `last_metadata`, `last_seen`, and `listing_urls`. This was a breaking
 change but no live data existed yet (the C1 live run was dry-run-only,
 which doesn't persist state), so no migration was needed.
+
+Schema change in MBUSA pivot (v2): adds an `email_signals` list to
+each VIN record. An EmailSignal is one observation of a VIN in an
+authorized email alert (cars.com / autotrader / cargurus): the alert's
+provider, the time we observed it, the ask price at that observation,
+and the price-drop delta the alert reported. The list accumulates so
+triage can see the trajectory of a candidate's ask over time even when
+no MBUSA candidate matches on a given day.
+
+The v2 migration runs on first `load_seen_vins` against a pre-v2 file:
+adds `email_signals: []` to every existing VIN record and stamps a
+top-level `_schema_version: 2` marker. The migrated state is persisted
+on the next `save_seen_vins` call (i.e., the next `mark_seen` after
+ingestion resumes). The migration is idempotent — a v2 file loads
+unchanged.
+
+The `source` field on candidate dicts (queue, triaged) is a sibling
+concern handled by ingest.py, not by this module — state.py passes
+candidates through opaquely.
 """
 from __future__ import annotations
 
@@ -34,6 +53,17 @@ SEEN_VINS_PATH = DATA_DIR / "seen-vins.json"
 QUEUE_PATH = DATA_DIR / "queue.json"
 TRIAGED_PATH = DATA_DIR / "triaged.json"
 
+# Current schema version for seen-vins.json. Bumped by the MBUSA pivot
+# to add per-VIN email_signals. See module docstring for the v1→v2
+# migration story.
+SCHEMA_VERSION = 2
+
+# Top-level sentinel key carrying the schema version. Prefixed with
+# `_` so it sorts above VIN entries (which are 17-char uppercase
+# alphanumeric and never start with underscore) and is trivially
+# distinguishable from a VIN by any iterator that needs to skip it.
+_SCHEMA_VERSION_KEY = "_schema_version"
+
 
 def _ensure_data_dir() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -45,11 +75,41 @@ def _now_iso() -> str:
 
 # ---------- seen-vins ----------
 
+def _migrate_if_needed(state: dict) -> dict:
+    """Upgrade a seen-vins state dict to the current schema in place.
+
+    Idempotent: a v2 dict (or empty dict) loads unchanged. A v1 dict
+    (no `_schema_version`, no `email_signals` on VIN records) is
+    upgraded by adding `email_signals: []` to every VIN record and
+    stamping the version marker.
+
+    Mutates and returns ``state`` so callers can chain.
+    """
+    current_version = state.get(_SCHEMA_VERSION_KEY)
+    if current_version == SCHEMA_VERSION:
+        return state
+
+    # v1 → v2: add email_signals to every VIN record. We iterate by
+    # key list (not items()) so it's safe to mutate the dict, and skip
+    # any underscore-prefixed metadata keys defensively even though
+    # only _schema_version is defined today.
+    for key in list(state.keys()):
+        if key.startswith("_"):
+            continue
+        record = state[key]
+        if isinstance(record, dict) and "email_signals" not in record:
+            record["email_signals"] = []
+
+    state[_SCHEMA_VERSION_KEY] = SCHEMA_VERSION
+    return state
+
+
 def load_seen_vins() -> dict:
     _ensure_data_dir()
     if not SEEN_VINS_PATH.exists():
-        return {}
-    return json.loads(SEEN_VINS_PATH.read_text())
+        return {_SCHEMA_VERSION_KEY: SCHEMA_VERSION}
+    state = json.loads(SEEN_VINS_PATH.read_text())
+    return _migrate_if_needed(state)
 
 
 def save_seen_vins(state: dict) -> None:
@@ -119,9 +179,16 @@ def mark_seen(
             "first_seen": now,
             "last_seen": now,
             "per_provider": {},
+            "email_signals": [],
         }
     else:
         state[vin]["last_seen"] = now
+        # Belt-and-suspenders: a record created before the v2 migration
+        # ran (shouldn't happen in practice — load_seen_vins migrates
+        # everything on read — but cheap insurance against an external
+        # writer or a partial migration) gets the email_signals field
+        # added here so downstream readers don't trip on its absence.
+        state[vin].setdefault("email_signals", [])
 
     per_provider = state[vin].setdefault("per_provider", {})
     if provider not in per_provider:
@@ -139,6 +206,77 @@ def mark_seen(
         per_provider[provider]["listing_urls"].append(listing_url)
 
     save_seen_vins(state)
+
+
+# ---------- email signals ----------
+
+
+def add_email_signal(
+    vin: str,
+    provider: str,
+    price_drop_delta: Optional[float] = None,
+    ask_at_observation: Optional[float] = None,
+    observed_at: Optional[str] = None,
+) -> None:
+    """Append an EmailSignal to a VIN's accumulated history.
+
+    An EmailSignal is one observation of a VIN inside an authorized
+    email alert. It carries the alert's provider name, the time we
+    observed it, the asking price at that observation (if the alert
+    reported one), and the price-drop delta the alert advertised (a
+    positive number means the ask decreased by that amount since the
+    alert's last sighting; cars.com / autotrader / cargurus all use
+    positive-for-drop).
+
+    Auto-creates the VIN record if it doesn't exist yet — an email
+    signal for an unknown VIN is still worth logging for audit even
+    if no MBUSA candidate ever materializes for it. The record is
+    created with empty `per_provider` and the new signal in
+    `email_signals`; `first_seen` / `last_seen` are stamped to now.
+
+    Idempotent only in the trivial sense that calling it twice with
+    identical args appends two records — that's deliberate, since each
+    call represents a distinct observation event (e.g., two emails on
+    different days both mentioning the same VIN-and-price).
+    """
+    state = load_seen_vins()
+    now = observed_at or _now_iso()
+
+    if vin not in state:
+        state[vin] = {
+            "first_seen": now,
+            "last_seen": now,
+            "per_provider": {},
+            "email_signals": [],
+        }
+    else:
+        state[vin]["last_seen"] = now
+        state[vin].setdefault("email_signals", [])
+
+    signal = {
+        "provider": provider,
+        "observed_at": now,
+        "price_drop_delta": price_drop_delta,
+        "ask_at_observation": ask_at_observation,
+    }
+    state[vin]["email_signals"].append(signal)
+
+    save_seen_vins(state)
+
+
+def get_email_signals(vin: str) -> list:
+    """Return the EmailSignal history for a VIN.
+
+    Returns an empty list when the VIN is unknown or when the record
+    predates the v2 schema migration (defensive — load_seen_vins
+    should have migrated it, but a degraded environment shouldn't
+    crash callers).
+    """
+    state = load_seen_vins()
+    record = state.get(vin)
+    if not isinstance(record, dict):
+        return []
+    return list(record.get("email_signals") or [])
 
 
 # ---------- queue ----------
