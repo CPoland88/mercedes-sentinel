@@ -1,87 +1,180 @@
 # Mercedes Sentinel → Next Vehicle Handoff
+## Reference architecture and per-vehicle playbook for future car-search clones
 
-A condensed brief for starting a fresh Claude conversation about cloning the
-Mercedes Sentinel pattern for the next vehicle pursuit (cheap C6 Corvette to
-wrap as Lightning McQueen for the kids). Read top-to-bottom — should take
-about 5 minutes.
+A condensed reference for starting a fresh Claude conversation about
+cloning the Mercedes Sentinel pattern for the next vehicle pursuit.
+Read top-to-bottom — should take about 7 minutes.
 
 ---
 
 ## TL;DR
 
 - Mercedes Sentinel is shipped and running autonomously at 4 PM ET each day on the Mac mini.
-- For car #2 (C6 Corvette): **clone the repo, swap the per-vehicle profile, don't try to build an umbrella architecture yet.** Two examples make the refactor target obvious; one example makes it guesswork.
-- `scripts/llm.py` was already parameterized in commit `f8e753e` for future umbrella mode — the function signatures accept per-vehicle overrides, defaults preserve current Mercedes behavior.
-- Six open scoping questions need answers before scaffolding starts (see [Open questions for the C6 build](#open-questions-for-the-c6-build) below).
-- Plan: clone for #2, refactor into a `sentinel-core` package for #3.
+- For each new vehicle: **clone the repo, pick the source mix that fits the vehicle archetype, swap the per-vehicle profile, wire the new primary-source ingest.** Don't build an umbrella architecture until you have 3+ clones to refactor against.
+- The infrastructure splits in three tiers: **truly reusable** (state / mail / llm / notify / daily / launchd), **reusable with reshape** (parsers + ingest orchestration, currently shaped for API-primary post-MBUSA pivot), and **per-vehicle** (CONTEXT.md, references, system.md, primary-source client).
+- The MBUSA inventory API path is largely Mercedes-specific. Future older / non-CPO vehicle searches will lean on **dealer-aggregator emails + auction emails + forum classifieds** as primary sources — closer to the pre-pivot architecture than the current one.
+- Plan: clone for vehicles #2–3, refactor into a `sentinel-core` package once the duplication makes the seams obvious.
 
 ---
 
 ## What Mercedes Sentinel is (one-paragraph orientation)
 
 Autonomous franchise-dealer monitor for a used 2024+ Mercedes-Benz GLS,
-driven by the third-baby deadline of October 2026. IMAP-polls a dedicated
-Gmail label every afternoon, extracts candidate listings from saved-search
-alerts (Cars.com / AutoTrader / CarGurus), sends each candidate to Claude
-Sonnet 4.6 with a project-specific rubric for triage, and emails a
-structured daily summary categorized as ACTION / NEEDS_HUMAN / PASS. Built
-across three commits (C1 ingest, C2 triage, C3 schedule + notify) and
-deployed via launchd. Repo: `github.com/CPoland88/mercedes-sentinel`.
+driven by the third-baby deadline of October 2026. Polls MBUSA's
+consumer inventory API every afternoon for matching CPO listings,
+joins them with price-drop signals extracted from Cars.com / AutoTrader
+/ CarGurus saved-search emails, sends each candidate to Claude Sonnet
+4.6 with a project-specific rubric for triage, and emails a structured
+daily summary categorized as ACTION / NEEDS_HUMAN / PASS. Built across
+two architectural eras — email-first (C1/C2/C3) then MBUSA-API-first
+(Architecture B pivot, 2026-05-21) — and deployed via launchd. Repo:
+`github.com/CPoland88/mercedes-sentinel`. See `MBUSA_PIVOT.md` for the
+architectural pivot history.
 
 ---
 
-## Architecture in three layers
+## Architecture today (post-pivot)
 
-**C1 — Ingest.** `scripts/ingest.py` + `scripts/parsers/` poll the Gmail
-label, dispatch each unread email to a provider-specific parser (or regex
-fallback), extract VIN/URL/price/mileage/deal_badge, dedup against
-`data/seen-vins.json` (metadata-aware — a price drop on a known VIN
-re-triggers triage), and queue new candidates in `data/queue.json`.
+Three layers, after the MBUSA pivot.
 
-**C2 — Triage.** `scripts/triage.py` drains the queue and sends each
-candidate to Claude (Sonnet 4.6) via `scripts/llm.py`. The system prompt
-is assembled by concatenating `scripts/prompts/system.md` with
-`CONTEXT.md` and four `references/*.md` files, marked with
-`cache_control: ephemeral` so the rubric is cached and billed at 10%
-on subsequent calls within the 5-minute window. Forced tool-use
-(`scripts/prompts/triage_tool.json`) returns a structured verdict —
-`ACTION`, `PASS`, or `NEEDS_HUMAN` — with reasoning, key_factors, and
-action_items. Verdicts append to `data/triaged.json`.
+**Primary candidate stream — MBUSA API.** `scripts/mbusa_inventory.py`
+polls the MBUSA inventory JSON endpoint
+(`nafta-service.mbusa.com/api/inv/v1/...`) with the SPA's exact query
+parameters, returns matching CPO / pre-owned records, and produces a
+canonical candidate shape. `scripts/ingest.py` queues these against
+`data/seen-vins.json` (schema v2 — per-VIN `email_signals` sub-record).
 
-**C3 — Schedule + notify.** `scripts/daily.py` is the orchestrator
-launchd invokes at 4 PM ET. It runs ingest → triage → email summary in
-sequence, tolerant of partial failures (failed ingest doesn't block
-triage; failed triage still produces an error email). `scripts/notify.py`
-builds the daily digest and sends it via Gmail SMTP. The plist lives at
-`launchd/com.craigpoland.mercedes-sentinel.plist`.
+**Secondary signal layer — email parsers.** `scripts/parsers/`
+(`cars_com`, `autotrader`, `cargurus`, `fallback`) extract VIN +
+price-drop deltas from saved-search emails.
+`scripts/email_signal_matcher.py` attaches these signals to existing
+MBUSA candidates by VIN. Emails no longer act as the primary candidate
+source — they enrich candidates the API surfaced.
+
+**Triage + notify (unchanged through the pivot).** `scripts/triage.py`
+sends queued candidates to Claude Sonnet 4.6 via `scripts/llm.py`, with
+`cache_control: ephemeral` on the rubric blocks (CONTEXT.md + four
+references files) so re-runs within 5 minutes bill at 10%. Forced
+tool-use returns ACTION / NEEDS_HUMAN / PASS verdicts.
+`scripts/daily.py` is the launchd-invoked orchestrator;
+`scripts/notify.py` builds and sends the daily digest via Gmail SMTP.
+
+**Important framing for future clones:** this API-primary +
+email-signal-secondary shape only applies when the manufacturer
+exposes a usable consumer inventory API. **For older or non-CPO
+vehicles — the future for this project — the more relevant baseline
+is the pre-pivot architecture: parsers emit candidates directly,
+email is the primary source.** Future ingests will more often look
+like commits at or before `f8e753e` than like `951c515`.
 
 ---
 
-## What's reusable vs. what's per-vehicle
+## The source-pattern taxonomy
 
-This is the key distinction for cloning.
+Every vehicle pursuit uses some mix of these patterns. Each has
+distinct cost, reliability, and architecture implications.
 
-**Reusable infrastructure (will not change between cars):**
+**Manufacturer inventory APIs (MBUSA pattern).** Consumer-facing JSON
+the manufacturer's own SPA hits. Validated working for MBUSA. Cost to
+add a new one: 1–2 days of recon + client + tests, depending on how
+discoverable the parameter contract is. Most relevant only for
+newer-vehicle CPO hunts; less applicable to older-vehicle searches
+where dealer / private inventory dominates. Architecture slot: primary
+candidate stream.
 
-- `scripts/state.py` — JSON state schema, dedup logic, per-provider metadata snapshots
+**Dealer-aggregator email alerts (Cars.com / AutoTrader / CarGurus).**
+Saved-search digest emails. Cost: ~zero for these three (parsers
+exist); ~1 day per new aggregator. Reliability: high — aggregators
+want to deliver these. Architecture slot: signal layer in the Mercedes
+config; **returns to primary for older-vehicle hunts.** Coverage
+caveat: aggregators index dealer inventory broadly but lag private-
+party listings.
+
+**Enthusiast auction emails (Bring a Trailer, Cars & Bids).**
+Saved-search auction emails. Cost: ~1 day per parser; format diverges
+sharply from dealer aggregators. Reliability: high. **Architecture
+slot: primary for collector / project-car hunts** where most
+interesting inventory transacts through auction sites rather than
+dealer lots.
+
+**Forum classifieds (Corvette Forum, Rennlist, AudiWorld, Pelican
+Parts).** Vehicle-specific forums where enthusiasts post for-sale ads.
+Many forums expose RSS for their classifieds sections. Cost: ~half day
+per RSS feed. Scraping is out of scope per WORKSPACE.md. **Architecture
+slot: secondary, or primary for niche / model-specific hunts** where
+the most knowledgeable sellers cluster.
+
+**Private marketplace (Facebook Marketplace, Craigslist).** Cost: high
+— both require browser automation, which is out of scope per
+WORKSPACE.md. Status: requires a rule change or manual forwarding to a
+monitored Gmail label. Manual forwarding is the only sanctioned path
+today; feasible but reduces autonomous-ness. For older / project-grade
+vehicles this is often where the cheap finds live, so worth budgeting
+for the rule-change conversation when the time comes.
+
+---
+
+## Vehicle archetype taxonomy
+
+How the source mix changes by what you're hunting. Each archetype has
+a different reuse rate against the current Mercedes infrastructure.
+
+**Luxury franchise-dealer hunt (Mercedes GLS pattern).** Manufacturer
+API primary + aggregator emails secondary. Deadline-driven, low-volume,
+dealer-dominated. Highest reuse of current code. **Probably a one-off
+for this project given the older-vehicle focus going forward.**
+
+**Enthusiast project car (C6 Corvette, NA/NB Miata, 996/997 911).**
+Aggregator emails primary + auction emails secondary. Forum classifieds
+become valuable. Private marketplace would help but is out of scope.
+No deadline, condition-tolerant, mixed seller types. Requires reshape
+work to move parsers back to candidate-emission (~1–2 days).
+
+**Collector / auction-grade (vintage Porsche, R32 GT-R, air-cooled
+911, early Land Cruiser).** Auction emails primary (BaT, Cars & Bids),
+aggregator secondary, forum classifieds secondary. New parser work for
+auction sources (~2 days each). Forum integration likely required.
+Comp pricing is harder — auction results matter more than dealer asks.
+
+**Driver-grade muscle / sports (C5 Corvette, S2000, fox-body Mustang).**
+Aggregator primary + forum classifieds secondary + private marketplace
+if rule changes. Volume is high enough that triage rubric tuning
+matters more than source breadth.
+
+---
+
+## What's reusable vs what's per-vehicle
+
+Three tiers, replacing the prior two-tier framing.
+
+**Truly reusable infrastructure (no per-vehicle work).**
+
+- `scripts/state.py` — JSON state schema v2, dedup, per-VIN `email_signals`
 - `scripts/mail.py` — IMAP context manager
-- `scripts/ingest.py` — orchestration logic (Gmail label name is the only customization point)
-- `scripts/parsers/cars_com.py`, `autotrader.py`, `cargurus.py`, `fallback.py` — work for any vehicle the dealer/seller lists; not Mercedes-specific
-- `scripts/llm.py` — Anthropic client wrapper (now parameterized — see below)
+- `scripts/llm.py` — Anthropic client wrapper, parameterized for multi-profile use (commit `f8e753e`)
 - `scripts/notify.py` — email builder + SMTP sender, verdict-agnostic
 - `scripts/daily.py` — orchestrator skeleton
-- `scripts/prompts/triage_tool.json` — tool-use schema (may need minor per-car tweaks to `key_factors` fields but the core shape is reusable)
-- `launchd/` — plist template + install/uninstall scripts
-- Test harness in `scripts/tests/` — 82 tests, mostly reusable; a few assertions check Mercedes-specific strings and would need swapping
+- `scripts/parsers/fallback.py` — generic VIN-pattern extraction
+- `scripts/prompts/triage_tool.json` — tool-use schema (occasional `key_factors` tweaks per vehicle, but core shape is stable)
+- `launchd/` — plist template + install / uninstall scripts
+- Test harness scaffolding in `scripts/tests/` — 204 tests at `bb9aa90`, most are reusable
 
-**Per-vehicle profile (must be replaced for each car):**
+**Reusable with reshape (work required to fit a new vehicle).**
 
-- `CONTEXT.md` — buyer spec (trim, year, mileage, color, geography, price ceiling, deadline)
-- `references/*.md` — dealer-tier list, trim decoder, CPO criteria, comp-pricing framework, carfax-reading, negotiation framework
-- `scripts/prompts/system.md` — system prompt template containing VIN decode rules, dealer brand examples, verdict definitions tuned to the buyer spec
+- `scripts/parsers/cars_com.py` — currently emits `EmailSignal` shape (post-MBUSA pivot). For any vehicle without a primary API, either revert to candidate-emission or wrap signals as standalone candidates in `ingest.py`.
+- `scripts/parsers/autotrader.py`, `cargurus.py` — same shape question.
+- `scripts/email_signal_matcher.py` — architecturally generic but presumes a primary stream exists to match against. Skip entirely for email-primary vehicles.
+- `scripts/ingest.py` — orchestration logic is reusable, but the primary-source call is wired to `mbusa_inventory.py`. Swap in the new primary source, or restructure to "parsers-as-primary" if no API exists.
+
+**Per-vehicle (must be rebuilt every clone).**
+
+- `CONTEXT.md` — buyer spec
+- `references/*.md` — domain knowledge for the vehicle (trim decoder, condition framework, comp-pricing approach, negotiation framework)
+- `scripts/prompts/system.md` — triage rubric tuned to the spec
 - Gmail label name (hardcoded in `scripts/ingest.py`)
 - `launchd/<name>.plist` — label, log paths, run hour
-- `.env` `EMAIL_TO` (if different recipient)
+- `.env` `EMAIL_TO` if different recipient
+- **The primary-source client itself** — `scripts/mbusa_inventory.py` is the Mercedes-specific instance of this slot. For a non-API vehicle there is no equivalent module, and the parsers-as-primary path replaces it.
 
 ---
 
@@ -94,12 +187,13 @@ Commit `f8e753e` parameterized three functions in `scripts/llm.py`:
 - `estimate_input_tokens(rubric_files=, system_template_path=)`
 
 Defaults fall back to the module-level constants (`RUBRIC_FILES`,
-`SYSTEM_TEMPLATE_PATH`, `DEFAULT_MODEL`), which is the Mercedes profile.
-A future umbrella orchestrator can call `triage()` with per-vehicle
-overrides without modifying `llm.py`. For the C6 clone (not umbrella),
-either edit the module constants in place or leave them and pass
-overrides — both work. Five tests in `scripts/tests/test_llm.py` lock
-the contract.
+`SYSTEM_TEMPLATE_PATH`, `DEFAULT_MODEL`), which is the Mercedes
+profile. A future umbrella orchestrator can call `triage()` with
+per-vehicle overrides without modifying `llm.py`. **The primary-source
+layer is the largest unparameterized boundary remaining** — each new
+vehicle either gets a new client module or wires parsers as primary in
+`ingest.py`. Five tests in `scripts/tests/test_llm.py` lock the
+`llm.py` contract.
 
 ---
 
@@ -111,115 +205,88 @@ you build a second one and see what you actually had to change.
 Abstracting from one example is guesswork — you'd be inventing
 flexibility against problems you haven't seen yet. After two real
 builds the duplication becomes obvious and the refactor target writes
-itself. Plan: clone for #2, refactor into `sentinel-core` for #3.
+itself. Plan: clone for vehicles #2–3, refactor into `sentinel-core`
+for #4.
 
-The cost of cloning is low — most of the work for the C6 build is the
-profile content (CONTEXT.md, references, system.md), which would need
-to be written either way.
+The cost of cloning is low — most of the work for any new vehicle is
+the profile content (CONTEXT.md, references, system.md) and any new
+primary-source client, both of which would need to be written either
+way.
+
+The source-pattern taxonomy above is itself a hint at where the
+eventual `sentinel-core` seams will land: primary-source clients slot
+behind a common interface, parsers stay as-is, triage and notify stay
+reusable, profiles become an injected configuration object.
 
 ---
 
-## The C6 Corvette pivot
+## Universal scoping questions
 
-**Goal:** Find a cheap C6 base Corvette (2005–2013) in driveable,
-wrap-ready condition. Wrap it as Lightning McQueen and use as a
-real-world kids' car for parades, school events, weekend fun.
+Apply these to any new vehicle before scaffolding begins. They replace
+the prior C6-specific list as the load-bearing pre-build checklist.
 
-**How this hunt differs structurally from the Mercedes hunt:**
+1. **Timeline cadence.** Daily (Mercedes pattern, deadline-driven), weekly (passive hunting), event-driven (only ping when a match appears), or dormant (paused while another sentinel runs)?
+2. **Source mix.** Which of the five source patterns are in scope? Are new parsers required? Any out-of-scope-today sources worth a rule-change conversation?
+3. **Source architecture.** Is there a primary-source API? If not, do parsers emit candidates directly, or do we promote `EmailSignals` to candidates via an adapter? **This is the load-bearing question post-pivot.**
+4. **Spec parameters.** Which CONTEXT.md fields apply? Year range, trim, mileage ceiling, price ceiling, color, transmission, condition tolerance, must-have / nice-to-have packages.
+5. **Geography.** Radius from home? Willing to fly-and-drive? Same 250-mi cap as Mercedes or different?
+6. **Concurrency.** Will this run alongside other vehicle sentinels on the same Gmail account? Same launchd? Different run hours to avoid IMAP collisions?
 
-- Market is enthusiast-heavy (Bring a Trailer, Cars & Bids, Corvette
-  Forum classifieds, Facebook Marketplace, private listings on
-  AutoTrader/CarGurus) — not franchise-dealer-dominated like a $90K
-  Mercedes. Chevy dealers carry trade-ins but the deep inventory is
-  elsewhere.
-- No hard deadline. Passive cadence (weekly or every-few-days) is
-  reasonable.
-- Condition tolerance is higher. Cosmetic blemishes don't matter
-  because you're wrapping over them. Focus shifts to clean title, no
-  flood/salvage history, mechanically sound, accident-free
-  structurally.
-- Color is irrelevant — wrap covers it.
-- CPO doesn't apply at this age.
-- Price ceiling is much lower (roughly $15–25K depending on year/condition).
-- Mileage tolerance is much higher — C6 drivetrains are stout, 100K+
-  miles is fine on a clean LS3.
-- Year/engine tradeoff: 2005–2007 LS2 is cheapest but has early
-  valvetrain quirks. 2008+ LS3 is the sweet spot — more power, more
-  refined, costs more. 2013 GS/Z06 is unobtainium at this budget.
+---
+
+## Worked example — C6 Corvette
+
+The next vehicle Craig is eyeing is a cheap C6 base Corvette (2005–2013)
+in driveable, wrap-ready condition, to be wrapped as Lightning McQueen
+as a real-world kids' car. **This is one instantiation of the framework
+above** — illustrative for future vehicle conversations, not the only
+path.
+
+**Archetype:** Enthusiast project car.
+
+**How the universal scoping questions land for the C6 specifically:**
+
+- **Timeline.** No hard deadline. Passive (weekly or every-few-days) is reasonable. Could be dormant until Mercedes is bought to avoid two automations on the same Gmail account.
+- **Source mix.** Cars.com / AutoTrader / CarGurus emails (parsers exist); Bring a Trailer + Cars & Bids (each needs new parser, ~1 day each); Corvette Forum classifieds (RSS, half day); Facebook Marketplace where many cheap project cars live but requires WORKSPACE.md rule change or manual forwarding.
+- **Source architecture.** No GM equivalent of the MBUSA API in scope. **Parsers-as-primary is the right call.** Reshape `cars_com.py` / `autotrader.py` / `cargurus.py` back to candidate-emission, or write a thin adapter that promotes `EmailSignals` into the candidate queue in `ingest.py`. ~1–2 days of work.
+- **Spec parameters (C6-specific decisions still open):**
+  - Year / engine range — 2008+ LS3 (sweet spot, more power, costs more) vs. 2005–2007 LS2 (cheapest, early valvetrain quirks).
+  - Transmission — manual (more fun) vs. automatic (cheaper, kid-friendlier for parade duty).
+  - Hard price ceiling (rough range: $15–25K).
+  - Mileage ceiling (LS platform tolerates 100K+ fine).
+  - Color irrelevant (wrap covers it).
+  - CPO doesn't apply at this age.
+- **Geography.** Same 250-mi cap from Vienna VA, or willing to fly-and-drive for the right car?
+- **Concurrency.** Different run hour from Mercedes (e.g., 5 PM) to avoid same-Gmail IMAP collisions.
 
 **Things to keep in mind that are NOT obvious from the Mercedes build:**
 
-- The "no scraping" rule in `WORKSPACE.md` was a Mercedes-specific
-  decision driven by franchise-dealer TOS risk. For a C6 hunt, FB
-  Marketplace is genuinely where many cheap project-grade cars live,
-  but ingesting it would mean either browser automation (which breaks
-  the no-scraping rule) or manually forwarding listings to Gmail
-  (which is feasible but reduces the autonomous-ness).
-- BaT and Cars & Bids both send email notifications for saved
-  searches. Their email formats are very different from the
-  dealer-aggregator parsers. Each would need ~1–2 days of parser work
-  plus calibration tests.
-- The triage rubric needs new dealer/seller heuristics — "is this a
-  flipper or an enthusiast?" matters for C6 sellers in a way it
-  doesn't for franchise MB dealers.
+- The no-scraping rule in WORKSPACE.md was a Mercedes-specific decision driven by franchise-dealer TOS risk. For a C6 hunt, FB Marketplace is genuinely where many cheap project-grade cars live — worth the rule-change conversation explicitly.
+- BaT and Cars & Bids both send email notifications for saved searches; format diverges sharply from dealer-aggregator parsers.
+- The triage rubric needs new seller-type heuristics — "is this a flipper or an enthusiast?" matters for project-car sellers in a way it doesn't for franchise MB dealers.
+
+**Recommended scope (simplest version — Cars.com + AT + CarGurus only, no BaT / C&B / FB):**
+
+- **Primary-source decision:** parsers-as-primary (no API for GM in scope). Reshape parsers or build `EmailSignal`→candidate adapter (~1–2 days).
+- **Profile work:** new `CONTEXT.md` for C6 spec; 2–3 new references files (e.g., `c6-corvette-specifics.md`, `c6-known-issues.md`, `project-car-condition-framework.md`); rewrite `scripts/prompts/system.md` for C6 VIN decode + private-seller-vs-dealer heuristics + verdict definitions tuned to wrap-ready condition rather than CPO eligibility.
+- **Deployment:** copy launchd plist with new label, log paths, and a different run hour (e.g., 5 PM). Separate Gmail label. Fresh `data/` directory.
+- **New repo:** `github.com/CPoland88/corvette-sentinel` or similar.
+
+If BaT / C&B / forum classifieds are added, budget ~1–2 days per new source.
 
 ---
 
-## Open questions for the C6 build
+## When to refactor into `sentinel-core`
 
-These block scaffolding. Answer in the new conversation before any
-code work begins.
+After two clones the duplication patterns become visible. Likely seams
+(best guess from the source-pattern taxonomy):
 
-1. **Timeline.** Passive (whenever the right one shows up, weekly
-   cadence), active 6-month hunt (daily cadence like the Mercedes),
-   or dormant until Mercedes is bought (avoids two automations on the
-   same Gmail account)?
+- **Primary-source interface.** `MbusaInventoryClient`, `BatEmailClient`, `ParserPrimaryAdapter` all conform to a `CandidateSource` protocol returning `Candidate[]`.
+- **Vehicle profile object.** `CONTEXT.md` + references + system.md + Gmail label + launchd config become an injectable `VehicleProfile`.
+- **Orchestrator generalization.** `daily.py` takes a `VehicleProfile` + `CandidateSource[]` and runs the same ingest → triage → notify pipeline.
 
-2. **Listing sources.** Cars.com + AutoTrader + CarGurus only (zero
-   parser work), and/or Bring a Trailer + Cars & Bids (each needs a
-   new parser), and/or Facebook Marketplace (requires
-   browser-automation rule change or manual forwarding)?
-
-3. **Year/engine range.** 2008+ LS3 only, or open to 2005–2007 LS2
-   for cost, or specifically targeting a year (e.g., 2008 sweet spot)?
-
-4. **Transmission.** Manual only (more fun), automatic only (cheaper,
-   kid-friendlier for parade duty), or either?
-
-5. **Hard price ceiling.** Where does ACTION become PASS on price?
-
-6. **Mileage ceiling.** Where does ACTION become PASS on miles?
-
-A couple of softer questions worth touching on too: target geography
-(same 250-mile cap from Vienna VA, or willing to fly-and-drive for
-the right car?), and "kid-safety" considerations (e.g., requiring
-backseat-deletion-friendly cars, or accepting only cars with no known
-airbag recalls open).
-
----
-
-## Recommended scope for the C6 sentinel (rough, pending answers above)
-
-Assuming the simplest scope (Cars.com + AutoTrader + CarGurus only,
-no BaT/C&B/FB):
-
-- **C1 work:** ~zero. Existing parsers work as-is. Point at a new
-  Gmail label.
-- **C2 work:** Write new `CONTEXT.md` for C6 spec. Write 2–3 new
-  references files (something like `c6-corvette-specifics.md`,
-  `c6-known-issues.md`, `project-car-condition-framework.md`).
-  Rewrite `scripts/prompts/system.md` for C6 VIN decode + private-
-  seller-vs-dealer heuristics + verdict definitions tuned to
-  wrap-ready condition rather than CPO eligibility.
-- **C3 work:** Copy launchd plist with new label, log paths, and a
-  different run hour (e.g., 5 PM) so the two pipelines don't collide
-  on the same Gmail mailbox.
-- **New repo:** `github.com/CPoland88/corvette-sentinel` (or similar).
-  Fresh `data/` directory, separate Gmail label, separate `.env` if
-  desired.
-
-If Bring a Trailer / Cars & Bids are in scope, add ~1–2 days of
-parser work each plus calibration tests.
+Build none of this until clone #2 reveals which of these guesses are
+right and which are over-engineered.
 
 ---
 
@@ -229,7 +296,8 @@ parser work each plus calibration tests.
 - **GitHub:** `https://github.com/CPoland88/mercedes-sentinel`
 - **Mac mini deployment:** running via launchd at 4 PM ET daily, logs at `~/Library/Logs/MercedesSentinel/`
 - **Gmail label currently monitored:** `MB-Sentinel`
-- **Test count baseline:** 82 tests, all green at commit `f8e753e`
+- **Test count baseline:** 204 tests, all green at commit `bb9aa90`
+- **MBUSA pivot history:** `MBUSA_PIVOT.md` at project root
 - **Working partner instructions (`CLAUDE.md`):** "Before any task, read CONTEXT.md and WORKSPACE.md. Propose a plan before editing; never delete files without asking."
 
 ---
@@ -238,10 +306,13 @@ parser work each plus calibration tests.
 
 In a fresh Claude conversation, attach or reference this file:
 
-> I'm cloning Mercedes Sentinel for a C6 Corvette pursuit. Read
-> `NEXT_VEHICLE_HANDOFF.md` at the project root for context, then ask
-> me the six open scoping questions before proposing a build plan.
+> I'm cloning Mercedes Sentinel for a `<vehicle>` pursuit. Read
+> `NEXT_VEHICLE_HANDOFF.md` at the project root for the reference
+> architecture, then identify the archetype, recommend a source mix,
+> and ask me the six universal scoping questions before proposing a
+> build plan.
 
-Claude can then read this file, get oriented in ~5 minutes, ask the
-open scoping questions, and propose a clone plan without rebuilding
-context from scratch.
+Claude can then read this file, get oriented in ~7 minutes, identify
+the archetype, recommend a source mix, ask the universal scoping
+questions, and propose a clone plan without rebuilding context from
+scratch.
